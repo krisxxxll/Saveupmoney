@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Wish Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#142b22;
+    --ink-2:#1c3a2c;
+    --paper:#f1e9d2;
+    --paper-dark:#e4d6ae;
+    --paper-line:#cdbb8c;
+    --brass:#b8892b;
+    --brass-light:#d6ab52;
+    --seal:#8c2f2f;
+    --forest:#3f6b4e;
+    --text-dark:#2a2115;
+    --text-cream:#f1e9d2;
+    --input-bg:#fffdf6;
+    --muted:#5c4f38;
+    --muted-2:#7a6d52;
+    --muted-3:#8a7c5c;
+    --label-color:#b8892b;
+    --danger-bg:#fbeceb;
+    --danger-border:#d9b8b8;
+    --danger-text:#7a3838;
+    --font-display:'Fraunces', serif;
+    --font-mono:'Space Mono', monospace;
+    --font-body:'Inter', sans-serif;
+  }
+  body.dark-mode{
+    --ink:#0b1512;
+    --ink-2:#111f19;
+    --paper:#1c2420;
+    --paper-dark:#12181a;
+    --paper-line:#3c463f;
+    --text-dark:#ece3c8;
+    --input-bg:#232b26;
+    --muted:#b9ad8e;
+    --muted-2:#9c9077;
+    --muted-3:#83795f;
+    --danger-bg:#3a2020;
+    --danger-border:#5c3434;
+    --danger-text:#e0a8a8;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 20% 10%, var(--ink-2), transparent 60%),
+      var(--ink);
+    font-family:var(--font-body);
+    color:var(--text-cream);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    position:relative;
+    transition:background .3s ease;
+  }
+  #bg-layer{
+    position:fixed;
+    inset:0;
+    z-index:-1;
+    overflow:hidden;
+    background:transparent;
+  }
+  #bg-layer img, #bg-layer video{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+  }
+  #bg-layer.has-media::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,.4);
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+
+  .book{
+    width:100%;
+    max-width:480px;
+    background:var(--paper);
+    color:var(--text-dark);
+    border-radius:18px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.6), 0 0 0 1px rgba(0,0,0,.25);
+    position:relative;
+    overflow:hidden;
+    min-height:640px;
+  }
+  .book::before{
+    /* spine stitching */
+    content:"";
+    position:absolute;
+    left:0; top:0; bottom:0;
+    width:14px;
+    background:repeating-linear-gradient(
+      to bottom,
+      var(--brass) 0 2px,
+      transparent 2px 14px
+    );
+    opacity:.55;
+  }
+  .page{
+    padding:38px 30px 30px 44px;
+    min-height:640px;
+    display:none;
+    flex-direction:column;
+    animation:fadeIn .35s ease;
+  }
+  .page.active{display:flex;}
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  /* ---------- Header / nav ---------- */
+  .top-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom:6px;
+    min-height:34px;
+  }
+  .back-btn{
+    background:none;
+    border:none;
+    cursor:pointer;
+    color:var(--seal);
+    font-family:var(--font-display);
+    font-size:22px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:4px 8px 4px 0;
+    border-radius:8px;
+    transition:transform .15s ease, opacity .15s ease;
+  }
+  .back-btn:hover{ transform:translateX(-3px); }
+  .back-btn:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible{
+    outline:3px solid var(--brass);
+    outline-offset:2px;
+  }
+
+  .eyebrow{
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--label-color);
+    opacity:.9;
+  }
+  h1.title{
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:30px;
+    margin:2px 0 0 0;
+  }
+  h2.title{
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:24px;
+    margin:0 0 0 0;
+  }
+
+  /* ---------- HOME ---------- */
+  .cover-seal{
+    align-self:center;
+    width:78px; height:78px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, var(--brass-light), var(--brass) 60%, #8a651d 100%);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 6px 14px rgba(0,0,0,.35), inset 0 0 0 3px rgba(255,255,255,.15);
+    margin:6px 0 4px 0;
+    font-family:var(--font-display);
+    font-size:34px;
+    color:#2a1c05;
+  }
+  .home-heading{
+    text-align:center;
+    margin-bottom:26px;
+  }
+  .home-heading .eyebrow{ display:block; margin-bottom:6px;}
+  .home-heading h1{ font-size:28px; }
+  .home-heading p{
+    font-family:var(--font-body);
+    font-size:13px;
+    color:var(--muted);
+    margin:6px 0 0;
+  }
+
+  .tabs{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    margin-top:auto;
+    margin-bottom:auto;
+  }
+  .tab-card{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    background:var(--ink);
+    color:var(--text-cream);
+    border:none;
+    border-radius:14px;
+    padding:18px 20px;
+    cursor:pointer;
+    text-align:left;
+    font-family:var(--font-body);
+    position:relative;
+    box-shadow:0 8px 0 -4px rgba(0,0,0,0), 0 2px 6px rgba(0,0,0,.25);
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .tab-card:hover{ transform:translateY(-2px); box-shadow:0 10px 18px -6px rgba(0,0,0,.4); }
+  .tab-card:active{ transform:translateY(0px) scale(.99); }
+  .tab-icon{
+    width:44px; height:44px;
+    flex:0 0 auto;
+    border-radius:50%;
+    background:var(--brass);
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px;
+  }
+  .tab-text .tab-name{
+    font-family:var(--font-display);
+    font-size:19px;
+    font-weight:600;
+  }
+  .tab-text .tab-sub{
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--brass-light);
+    margin-top:2px;
+  }
+
+  /* ---------- BALANCE ---------- */
+  .balance-display{
+    text-align:center;
+    margin:22px 0 26px;
+    padding:26px 10px;
+    border:2px solid var(--paper-line);
+    border-radius:14px;
+    background:repeating-linear-gradient(var(--paper) 0px, var(--paper) 27px, var(--paper-line) 28px);
+    position:relative;
+  }
+  .balance-display .eyebrow{ margin-bottom:8px; display:block;}
+  .balance-amount{
+    font-family:var(--font-mono);
+    font-weight:700;
+    font-size:44px;
+    letter-spacing:.02em;
+    color:var(--forest);
+  }
+  .field-label{
+    font-family:var(--font-mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    color:var(--label-color);
+    margin-bottom:6px;
+    display:block;
+  }
+  .ledger-input-row{
+    display:flex;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .ledger-input{
+    flex:1;
+    font-family:var(--font-mono);
+    font-size:17px;
+    padding:12px 14px;
+    border-radius:10px;
+    border:2px solid var(--paper-line);
+    background:var(--input-bg);
+    color:var(--text-dark);
+  }
+  .ledger-input:focus{ border-color:var(--brass); outline:none; }
+  .btn{
+    font-family:var(--font-body);
+    font-weight:600;
+    font-size:14px;
+    border:none;
+    border-radius:10px;
+    padding:12px 18px;
+    cursor:pointer;
+    transition:transform .12s ease, filter .12s ease;
+  }
+  .btn:active{ transform:scale(.97); }
+  .btn-primary{ background:var(--forest); color:#f1f8f2; }
+  .btn-primary:hover{ filter:brightness(1.08); }
+  .btn-seal{ background:var(--seal); color:#fbeceb; }
+  .btn-seal:hover{ filter:brightness(1.08); }
+  .btn-outline{
+    background:transparent;
+    border:2px solid var(--paper-line);
+    color:var(--text-dark);
+  }
+  .btn-outline:hover{ border-color:var(--brass); }
+  .btn-full{ width:100%; }
+  .btn-sm{ padding:8px 12px; font-size:12px; border-radius:8px;}
+
+  .hint{
+    font-family:var(--font-body);
+    font-size:12px;
+    color:var(--muted-2);
+    margin-top:2px;
+  }
+  .toast{
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--forest);
+    min-height:16px;
+    margin-top:4px;
+  }
+
+  /* ---------- WISH LIST ---------- */
+  .wish-form{
+    border:2px dashed var(--paper-line);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:18px;
+  }
+  .picture-picker{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom:14px;
+  }
+  .picture-preview{
+    width:64px; height:64px;
+    border-radius:10px;
+    background:var(--paper-dark);
+    border:2px solid var(--paper-line);
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+    flex:0 0 auto;
+    font-size:22px;
+    color:var(--muted-3);
+  }
+  .picture-preview img, .picture-preview video{ width:100%; height:100%; object-fit:cover; }
+  .settings-preview{
+    width:64px; height:64px;
+    border-radius:10px;
+    background:var(--paper-dark);
+    border:2px solid var(--paper-line);
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+    flex:0 0 auto;
+    font-size:20px;
+    color:var(--muted-3);
+  }
+  .settings-preview img, .settings-preview video{ width:100%; height:100%; object-fit:cover; }
+  .file-btn-wrap{ position:relative; overflow:hidden; display:inline-block; }
+  .file-btn-wrap input[type=file]{
+    position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%;
+  }
+
+  .wish-list{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    overflow-y:auto;
+    padding-right:2px;
+    margin-bottom:8px;
+  }
+  .wish-card{
+    display:flex;
+    gap:12px;
+    background:var(--input-bg);
+    border:2px solid var(--paper-line);
+    border-radius:14px;
+    padding:12px;
+    position:relative;
+  }
+  .wish-photo{
+    width:58px; height:58px;
+    border-radius:10px;
+    background:var(--paper-dark);
+    flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+    font-size:20px;
+    color:var(--muted-3);
+    transform:rotate(-2deg);
+    border:2px solid #fff;
+    box-shadow:0 2px 4px rgba(0,0,0,.15);
+  }
+  .wish-photo img{ width:100%; height:100%; object-fit:cover; }
+  .wish-info{ flex:1; min-width:0; }
+  .wish-name{
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:16px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .wish-cost{
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--muted-2);
+    margin-top:1px;
+  }
+  .progress-track{
+    height:8px;
+    border-radius:6px;
+    background:var(--paper-dark);
+    margin-top:8px;
+    overflow:hidden;
+    border:1px solid var(--paper-line);
+  }
+  .progress-fill{
+    height:100%;
+    background:linear-gradient(90deg, var(--forest), #6fa07f);
+    transition:width .4s ease;
+  }
+  .wish-actions{
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+  }
+  .wish-remove{
+    position:absolute;
+    top:8px; right:10px;
+    background:none;
+    border:none;
+    cursor:pointer;
+    color:#b09a6b;
+    font-size:16px;
+    line-height:1;
+  }
+  .wish-remove:hover{ color:var(--seal); }
+  .seal-stamp{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    font-family:var(--font-mono);
+    font-size:10px;
+    color:var(--seal);
+    border:1.5px solid var(--seal);
+    border-radius:20px;
+    padding:2px 8px;
+    transform:rotate(-4deg);
+  }
+  .empty-note{
+    font-family:var(--font-body);
+    font-size:13px;
+    color:var(--muted-2);
+    text-align:center;
+    padding:30px 10px;
+    border:2px dashed var(--paper-line);
+    border-radius:12px;
+  }
+
+  /* ---------- SETTINGS ---------- */
+  .settings-block{ margin-bottom:22px; }
+  .currency-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:10px;
+  }
+  .coin{
+    aspect-ratio:1;
+    border-radius:50%;
+    border:2px solid var(--paper-line);
+    background:var(--input-bg);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    font-family:var(--font-mono);
+    gap:2px;
+    transition:transform .12s ease, border-color .12s ease;
+  }
+  .coin span.sym{ font-size:20px; font-weight:700; }
+  .coin span.code{ font-size:9px; letter-spacing:.05em; color:var(--muted-2); }
+  .coin:hover{ transform:translateY(-2px); }
+  .coin.selected{
+    border-color:var(--brass);
+    background:radial-gradient(circle at 35% 30%, var(--brass-light), var(--brass) 70%);
+    color:#2a1c05;
+  }
+  .coin.selected span.code{ color:#3a2a0c; }
+
+  .danger-zone{
+    border:2px solid var(--danger-border);
+    border-radius:12px;
+    padding:14px;
+    background:var(--danger-bg);
+  }
+  .danger-zone p{ font-size:12px; color:var(--danger-text); margin:0 0 10px; font-family:var(--font-body); }
+
+  /* ---------- Appearance controls ---------- */
+  .pill-toggle{
+    display:flex;
+    gap:8px;
+  }
+  .pill-toggle button{
+    flex:1;
+    font-family:var(--font-body);
+    font-weight:600;
+    font-size:13px;
+    padding:10px;
+    border-radius:10px;
+    border:2px solid var(--paper-line);
+    background:var(--input-bg);
+    color:var(--text-dark);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    transition:transform .12s ease, border-color .12s ease;
+  }
+  .pill-toggle button:hover{ transform:translateY(-1px); }
+  .pill-toggle button.selected{
+    border-color:var(--brass);
+    background:radial-gradient(circle at 35% 30%, var(--brass-light), var(--brass) 90%);
+    color:#2a1c05;
+  }
+
+  .color-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-top:10px;
+  }
+  .swatch-input{
+    -webkit-appearance:none;
+    appearance:none;
+    width:44px; height:44px;
+    border-radius:50%;
+    border:2px solid var(--paper-line);
+    padding:0;
+    cursor:pointer;
+    background:none;
+    overflow:hidden;
+  }
+  .swatch-input::-webkit-color-swatch-wrapper{ padding:0; }
+  .swatch-input::-webkit-color-swatch{ border:none; border-radius:50%; }
+  .swatch-input::-moz-color-swatch{ border:none; border-radius:50%; }
+
+  .bg-option{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom:14px;
+  }
+  .bg-option:last-child{ margin-bottom:0; }
+  .bg-option-text{ flex:1; }
+  .bg-option-text .field-label{ margin-bottom:2px; }
+  .remove-link{
+    background:none;
+    border:none;
+    color:var(--seal);
+    font-family:var(--font-body);
+    font-size:12px;
+    font-weight:600;
+    cursor:pointer;
+    padding:0;
+    margin-top:4px;
+  }
+  .remove-link:hover{ text-decoration:underline; }
+
+  ::-webkit-scrollbar{ width:8px; }
+  ::-webkit-scrollbar-thumb{ background:var(--paper-line); border-radius:8px; }
+</style>
+</head>
+<body>
+<div id="bg-layer"></div>
+
+<div class="book">
+
+  <!-- ============ HOME ============ -->
+  <section class="page active" id="page-home">
+    <div class="home-heading">
+      <div class="cover-seal">$</div>
+      <span class="eyebrow">Personal Ledger</span>
+      <h1 class="title">The Wish Ledger</h1>
+      <p>Track your savings. Fund your wishes.</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-card" onclick="goTo('wishes')">
+        <div class="tab-icon">✦</div>
+        <div class="tab-text">
+          <div class="tab-name">Wish Items</div>
+          <div class="tab-sub" id="home-wish-count">0 items saved</div>
+        </div>
+      </button>
+
+      <button class="tab-card" onclick="goTo('balance')">
+        <div class="tab-icon">$</div>
+        <div class="tab-text">
+          <div class="tab-name">Balance</div>
+          <div class="tab-sub" id="home-balance-preview">0</div>
+        </div>
+      </button>
+
+      <button class="tab-card" onclick="goTo('settings')">
+        <div class="tab-icon">⚙</div>
+        <div class="tab-text">
+          <div class="tab-name">Settings</div>
+          <div class="tab-sub">Currency &amp; data</div>
+        </div>
+      </button>
+    </div>
+  </section>
+
+  <!-- ============ BALANCE ============ -->
+  <section class="page" id="page-balance">
+    <div class="top-row">
+      <button class="back-btn" onclick="goTo('home')" aria-label="Back">←</button>
+      <h2 class="title">Balance</h2>
+    </div>
+
+    <div class="balance-display">
+      <span class="eyebrow">Current balance</span>
+      <div class="balance-amount" id="balance-amount">$0</div>
+    </div>
+
+    <label class="field-label" for="add-money-input">Add money</label>
+    <div class="ledger-input-row">
+      <input type="number" min="0" step="0.01" id="add-money-input" class="ledger-input" placeholder="0.00">
+      <button class="btn btn-primary" onclick="addMoney()">Add</button>
+    </div>
+    <div class="toast" id="balance-toast"></div>
+
+    <label class="field-label" for="remove-money-input" style="margin-top:14px;">Remove money</label>
+    <div class="ledger-input-row">
+      <input type="number" min="0" step="0.01" id="remove-money-input" class="ledger-input" placeholder="0.00">
+      <button class="btn btn-outline" onclick="removeMoney()">Remove</button>
+    </div>
+    <p class="hint">Removing money can't take the balance below 0.</p>
+  </section>
+
+  <!-- ============ WISH LIST ============ -->
+  <section class="page" id="page-wishes">
+    <div class="top-row">
+      <button class="back-btn" onclick="goTo('home')" aria-label="Back">←</button>
+      <h2 class="title">Wish Items</h2>
+    </div>
+
+    <div class="wish-form">
+      <div class="picture-picker">
+        <div class="picture-preview" id="new-wish-preview">📷</div>
+        <div>
+          <div class="file-btn-wrap btn btn-outline btn-sm">
+            Choose picture
+            <input type="file" accept="image/*" id="new-wish-file" onchange="handlePicture(event)">
+          </div>
+          <div class="hint">From your device, optional</div>
+        </div>
+      </div>
+
+      <label class="field-label" for="new-wish-name">Item name</label>
+      <input type="text" id="new-wish-name" class="ledger-input" placeholder="e.g. Noise-cancelling headphones" style="width:100%; margin-bottom:12px;">
+
+      <label class="field-label" for="new-wish-cost">Item cost</label>
+      <input type="number" min="0" step="0.01" id="new-wish-cost" class="ledger-input" placeholder="0.00" style="width:100%; margin-bottom:14px;">
+
+      <button class="btn btn-primary btn-full" onclick="addWish()">Add to wish list</button>
+      <div class="toast" id="wish-toast"></div>
+    </div>
+
+    <div class="wish-list" id="wish-list"></div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section class="page" id="page-settings">
+    <div class="top-row">
+      <button class="back-btn" onclick="goTo('home')" aria-label="Back">←</button>
+      <h2 class="title">Settings</h2>
+    </div>
+
+    <div class="settings-block">
+      <label class="field-label">Currency / icon</label>
+      <div class="currency-grid" id="currency-grid"></div>
+    </div>
+
+    <div class="settings-block">
+      <label class="field-label">Appearance</label>
+      <div class="pill-toggle" id="theme-toggle">
+        <button onclick="setDarkMode(false)" id="theme-light-btn">☀ Light</button>
+        <button onclick="setDarkMode(true)" id="theme-dark-btn">☾ Dark</button>
+      </div>
+      <div class="color-row">
+        <input type="color" id="text-color-input" class="swatch-input" onchange="handleTextColor(event)">
+        <div class="bg-option-text">
+          <span class="field-label" style="margin:0;">Text color</span>
+          <div class="hint">Changes the main text color across the app</div>
+        </div>
+        <button class="remove-link" onclick="resetTextColor()">Reset</button>
+      </div>
+    </div>
+
+    <div class="settings-block">
+      <label class="field-label">Background</label>
+
+      <div class="bg-option">
+        <div class="settings-preview" id="bg-image-preview">🖼</div>
+        <div class="bg-option-text">
+          <span class="field-label" style="margin:0;">Background picture</span>
+          <div class="hint">Photos only</div>
+          <div class="file-btn-wrap btn btn-outline btn-sm" style="margin-top:6px;">
+            Choose photo
+            <input type="file" accept="image/*" id="bg-image-file" onchange="handleBgImage(event)">
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-option">
+        <div class="settings-preview" id="bg-video-preview">🎞</div>
+        <div class="bg-option-text">
+          <span class="field-label" style="margin:0;">Live background</span>
+          <div class="hint">Looping videos or GIFs only</div>
+          <div class="file-btn-wrap btn btn-outline btn-sm" style="margin-top:6px;">
+            Choose video / GIF
+            <input type="file" accept="video/*,image/gif" id="bg-video-file" onchange="handleBgVideo(event)">
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-outline btn-sm" style="margin-top:6px;" onclick="removeBackground()">Remove background</button>
+      <div class="toast" id="bg-toast"></div>
+    </div>
+
+    <div class="settings-block danger-zone">
+      <span class="field-label" style="color:#7a3838;">Reset data</span>
+      <p>This clears your balance, saved wishes and pictures on this device. It can't be undone.</p>
+      <button class="btn btn-seal btn-sm" onclick="resetData()">Erase everything</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  const STORAGE_KEY = "wishLedgerData_v1";
+
+  const CURRENCIES = [
+    { code:"USD", sym:"$" },
+    { code:"EUR", sym:"€" },
+    { code:"GBP", sym:"£" },
+    { code:"JPY", sym:"¥" },
+    { code:"INR", sym:"₹" },
+    { code:"BTC", sym:"₿" },
+    { code:"KRW", sym:"₩" },
+    { code:"RUB", sym:"₽" },
+    { code:"BGN", sym:"лв" },
+  ];
+
+  let state = loadState();
+  let pendingPictureData = null; // holds the base64 image for the wish currently being created
+
+  function defaultState(){
+    return {
+      balance:0,
+      currency:"USD",
+      wishes:[],
+      darkMode:false,
+      textColor:null,
+      background:{ type:"none", data:null, mime:null }
+    };
+  }
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return defaultState();
+      const parsed = JSON.parse(raw);
+      const bg = parsed.background || {};
+      return {
+        balance: typeof parsed.balance === "number" ? parsed.balance : 0,
+        currency: parsed.currency || "USD",
+        wishes: Array.isArray(parsed.wishes) ? parsed.wishes : [],
+        darkMode: !!parsed.darkMode,
+        textColor: parsed.textColor || parsed.labelColor || null,
+        background: {
+          type: bg.type || "none",
+          data: bg.data || null,
+          mime: bg.mime || null
+        }
+      };
+    }catch(e){
+      console.error("Could not read saved data, starting fresh.", e);
+      return defaultState();
+    }
+  }
+
+  function saveState(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      return true;
+    }catch(e){
+      console.error("Could not save data.", e);
+      return false;
+    }
+  }
+
+  function currencySymbol(){
+    const c = CURRENCIES.find(c => c.code === state.currency);
+    return c ? c.sym : "$";
+  }
+
+  function fmt(amount){
+    const n = Math.round((amount + Number.EPSILON) * 100) / 100;
+    return currencySymbol() + n.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:2});
+  }
+
+  // ---------- Navigation ----------
+  function goTo(page){
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    document.getElementById("page-" + page).classList.add("active");
+    if(page === "home") renderHome();
+    if(page === "balance") renderBalance();
+    if(page === "wishes") renderWishes();
+    if(page === "settings") renderSettings();
+  }
+
+  // ---------- HOME ----------
+  function renderHome(){
+    document.getElementById("home-balance-preview").textContent = fmt(state.balance);
+    const n = state.wishes.length;
+    document.getElementById("home-wish-count").textContent = n === 1 ? "1 item saved" : n + " items saved";
+  }
+
+  // ---------- BALANCE ----------
+  function renderBalance(){
+    document.getElementById("balance-amount").textContent = fmt(state.balance);
+  }
+
+  function addMoney(){
+    const input = document.getElementById("add-money-input");
+    const val = parseFloat(input.value);
+    const toast = document.getElementById("balance-toast");
+    if(isNaN(val) || val <= 0){
+      toast.style.color = "var(--seal)";
+      toast.textContent = "Enter an amount greater than 0.";
+      return;
+    }
+    state.balance += val;
+    saveState();
+    input.value = "";
+    toast.style.color = "var(--forest)";
+    toast.textContent = "Added " + fmt(val) + " to your balance.";
+    renderBalance();
+  }
+
+  function removeMoney(){
+    const input = document.getElementById("remove-money-input");
+    const val = parseFloat(input.value);
+    const toast = document.getElementById("balance-toast");
+    if(isNaN(val) || val <= 0){
+      toast.style.color = "var(--seal)";
+      toast.textContent = "Enter an amount greater than 0.";
+      return;
+    }
+    state.balance = Math.max(0, state.balance - val);
+    saveState();
+    input.value = "";
+    toast.style.color = "var(--forest)";
+    toast.textContent = "Removed " + fmt(val) + " from your balance.";
+    renderBalance();
+  }
+
+  // ---------- WISH LIST ----------
+  function handlePicture(event){
+    const file = event.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e){
+      pendingPictureData = e.target.result;
+      const preview = document.getElementById("new-wish-preview");
+      preview.innerHTML = '<img src="' + pendingPictureData + '" alt="">';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function addWish(){
+    const nameInput = document.getElementById("new-wish-name");
+    const costInput = document.getElementById("new-wish-cost");
+    const toast = document.getElementById("wish-toast");
+    const name = nameInput.value.trim();
+    const cost = parseFloat(costInput.value);
+
+    if(!name){
+      toast.style.color = "var(--seal)";
+      toast.textContent = "Give the item a name.";
+      return;
+    }
+    if(isNaN(cost) || cost <= 0){
+      toast.style.color = "var(--seal)";
+      toast.textContent = "Enter a cost greater than 0.";
+      return;
+    }
+
+    state.wishes.unshift({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
+      name: name,
+      cost: cost,
+      image: pendingPictureData,
+      purchased: false
+    });
+    saveState();
+
+    nameInput.value = "";
+    costInput.value = "";
+    pendingPictureData = null;
+    document.getElementById("new-wish-preview").innerHTML = "📷";
+    document.getElementById("new-wish-file").value = "";
+
+    toast.style.color = "var(--forest)";
+    toast.textContent = "Added \"" + name + "\" to your wish list.";
+    renderWishes();
+  }
+
+  function removeWish(id){
+    state.wishes = state.wishes.filter(w => w.id !== id);
+    saveState();
+    renderWishes();
+  }
+
+  function buyWish(id){
+    const wish = state.wishes.find(w => w.id === id);
+    if(!wish || wish.purchased) return;
+    if(state.balance < wish.cost) return;
+    state.balance -= wish.cost;
+    wish.purchased = true;
+    saveState();
+    renderWishes();
+  }
+
+  function renderWishes(){
+    const list = document.getElementById("wish-list");
+    list.innerHTML = "";
+
+    if(state.wishes.length === 0){
+      list.innerHTML = '<div class="empty-note">No wishes yet — add your first item above.</div>';
+      return;
+    }
+
+    state.wishes.forEach(wish => {
+      const pct = Math.min(100, Math.round((state.balance / wish.cost) * 100));
+      const canBuy = state.balance >= wish.cost && !wish.purchased;
+
+      const card = document.createElement("div");
+      card.className = "wish-card";
+      card.innerHTML = `
+        <div class="wish-photo">${wish.image ? '<img src="'+wish.image+'" alt="">' : '✦'}</div>
+        <div class="wish-info">
+          <div class="wish-name">${escapeHtml(wish.name)} ${wish.purchased ? '<span class="seal-stamp">✓ funded</span>' : ''}</div>
+          <div class="wish-cost">${fmt(wish.cost)}</div>
+          <div class="progress-track"><div class="progress-fill" style="width:${wish.purchased ? 100 : pct}%"></div></div>
+          <div class="wish-actions">
+            ${wish.purchased
+              ? ''
+              : `<button class="btn ${canBuy ? 'btn-primary' : 'btn-outline'} btn-sm" ${canBuy ? '' : 'disabled style="opacity:.5; cursor:not-allowed;"'} onclick="buyWish('${wish.id}')">${canBuy ? 'Fund from balance' : pct + '% saved'}</button>`
+            }
+          </div>
+        </div>
+        <button class="wish-remove" title="Remove" onclick="removeWish('${wish.id}')">✕</button>
+      `;
+      list.appendChild(card);
+    });
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ---------- SETTINGS ----------
+  function renderSettings(){
+    const grid = document.getElementById("currency-grid");
+    grid.innerHTML = "";
+    CURRENCIES.forEach(c => {
+      const coin = document.createElement("button");
+      coin.className = "coin" + (state.currency === c.code ? " selected" : "");
+      coin.innerHTML = `<span class="sym">${c.sym}</span><span class="code">${c.code}</span>`;
+      coin.onclick = () => {
+        state.currency = c.code;
+        saveState();
+        renderSettings();
+      };
+      grid.appendChild(coin);
+    });
+
+    document.getElementById("theme-light-btn").classList.toggle("selected", !state.darkMode);
+    document.getElementById("theme-dark-btn").classList.toggle("selected", state.darkMode);
+
+    document.getElementById("text-color-input").value = state.textColor || "#2a2115";
+
+    renderBgPreview("bg-image-preview", state.background.type === "image" ? state.background : null, "🖼");
+    renderBgPreview("bg-video-preview", state.background.type === "video" ? state.background : null, "🎞");
+  }
+
+  function renderBgPreview(elId, bg, placeholder){
+    const el = document.getElementById(elId);
+    if(!bg || !bg.data){ el.innerHTML = placeholder; return; }
+    if(bg.mime && bg.mime.startsWith("video/")){
+      el.innerHTML = `<video src="${bg.data}" autoplay muted loop playsinline></video>`;
+    }else{
+      el.innerHTML = `<img src="${bg.data}" alt="">`;
+    }
+  }
+
+  // ---------- APPEARANCE: dark mode ----------
+  function applyTheme(){
+    document.body.classList.toggle("dark-mode", !!state.darkMode);
+  }
+
+  function setDarkMode(isDark){
+    state.darkMode = isDark;
+    saveState();
+    applyTheme();
+    renderSettings();
+  }
+
+  // ---------- APPEARANCE: text color ----------
+  function applyTextColor(){
+    if(state.textColor){
+      document.documentElement.style.setProperty("--text-dark", state.textColor);
+    }else{
+      document.documentElement.style.removeProperty("--text-dark");
+    }
+  }
+
+  function handleTextColor(event){
+    state.textColor = event.target.value;
+    saveState();
+    applyTextColor();
+  }
+
+  function resetTextColor(){
+    state.textColor = null;
+    saveState();
+    applyTextColor();
+    renderSettings();
+  }
+
+  // ---------- BACKGROUND ----------
+  function applyBackground(){
+    const layer = document.getElementById("bg-layer");
+    const bg = state.background;
+    if(!bg || bg.type === "none" || !bg.data){
+      layer.innerHTML = "";
+      layer.classList.remove("has-media");
+      return;
+    }
+    layer.classList.add("has-media");
+    if(bg.mime && bg.mime.startsWith("video/")){
+      layer.innerHTML = `<video src="${bg.data}" autoplay muted loop playsinline></video>`;
+    }else{
+      layer.innerHTML = `<img src="${bg.data}" alt="">`;
+    }
+  }
+
+  function handleBgImage(event){
+    const file = event.target.files[0];
+    const toast = document.getElementById("bg-toast");
+    if(!file) return;
+    if(!file.type.startsWith("image/")){
+      toast.style.color = "var(--seal)";
+      toast.textContent = "Please choose a photo file.";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e){
+      const previous = { ...state.background };
+      state.background = { type:"image", data:e.target.result, mime:file.type };
+      if(!saveState()){
+        state.background = previous;
+        toast.style.color = "var(--seal)";
+        toast.textContent = "That photo is too large to save. Try a smaller one.";
+        return;
+      }
+      applyBackground();
+      renderSettings();
+      toast.style.color = "var(--forest)";
+      toast.textContent = "Background picture set.";
+    };
+    reader.readAsDataURL(file);
+    event.target.value = "";
+  }
+
+  function handleBgVideo(event){
+    const file = event.target.files[0];
+    const toast = document.getElementById("bg-toast");
+    if(!file) return;
+    const isVideo = file.type.startsWith("video/");
+    const isGif = file.type === "image/gif";
+    if(!isVideo && !isGif){
+      toast.style.color = "var(--seal)";
+      toast.textContent = "Please choose a video or a GIF.";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e){
+      const previous = { ...state.background };
+      state.background = { type:"video", data:e.target.result, mime:file.type };
+      if(!saveState()){
+        state.background = previous;
+        toast.style.color = "var(--seal)";
+        toast.textContent = "That file is too large to save. Try a smaller one.";
+        return;
+      }
+      applyBackground();
+      renderSettings();
+      toast.style.color = "var(--forest)";
+      toast.textContent = "Live background set.";
+    };
+    reader.readAsDataURL(file);
+    event.target.value = "";
+  }
+
+  function removeBackground(){
+    state.background = { type:"none", data:null, mime:null };
+    saveState();
+    applyBackground();
+    renderSettings();
+    const toast = document.getElementById("bg-toast");
+    toast.style.color = "var(--forest)";
+    toast.textContent = "Background removed.";
+  }
+
+  function resetData(){
+    if(!confirm("Erase your balance, wishes, pictures, background and settings on this device? This can't be undone.")) return;
+    state = defaultState();
+    saveState();
+    pendingPictureData = null;
+    applyTheme();
+    applyTextColor();
+    applyBackground();
+    goTo("home");
+  }
+
+  // ---------- Init ----------
+  applyTheme();
+  applyTextColor();
+  applyBackground();
+  renderHome();
+</script>
+
+</body>
+</html>
