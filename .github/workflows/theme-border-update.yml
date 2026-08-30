@@ -1,0 +1,43 @@
+name: Apply themed borders
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/theme-border-update.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Make borders follow the active theme
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          old = "root.style.setProperty('--gold2',t.gold2);const ac=state.accentColor||t.accent;root.style.setProperty('--accent',ac);"
+          new = "root.style.setProperty('--gold2',t.gold2);const ac=state.accentColor||t.accent;const themedLine=state.highContrast?(state.darkMode?'#eeeeee':'#111111'):(state.darkMode?hexMix(ac,-18):hexMix(ac,58));document.body.style.setProperty('--line',themedLine);root.style.setProperty('--accent',ac);"
+          if old not in s:
+              raise SystemExit('Could not find applyAppearance theme section')
+          s = s.replace(old, new, 1)
+
+          s = s.replace("border:1px solid rgba(255,255,255,.4);border-radius:29px", "border:2px solid color-mix(in srgb,var(--line) 82%,white);border-radius:29px", 1)
+          s = s.replace("border:1px solid rgba(255,255,255,.16);border-radius:19px", "border:1px solid color-mix(in srgb,var(--accent2) 52%,white);border-radius:19px", 1)
+
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit themed borders
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Make theme colors update UI borders"
+          git push
