@@ -1,4 +1,4 @@
-name: Apply wish purchase update
+name: Apply wallpaper theme and max animations
 
 on:
   push:
@@ -15,70 +15,92 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Add real buying and wish settings
+      - name: Add wallpaper matching theme and max animation mode
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import re
 
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
 
-          marker = ' <div class="settings-block"><label class="field-label">Background</label>'
-          purchase_ui = ' <div class="settings-block"><label class="field-label">Wish list & purchases</label>\n  <div class="setting-row"><div class="setting-copy"><strong>Confirm before buying</strong><div class="hint">Ask before money is spent on a wish item</div></div><label class="switch"><input id="confirm-purchase-toggle" type="checkbox" onchange="setConfirmPurchases(this.checked)"><span class="switch-slider"></span></label></div>\n  <div class="setting-row"><div class="setting-copy"><strong>Hide bought items</strong><div class="hint">Automatically hide wishes after you buy them</div></div><label class="switch"><input id="hide-purchased-toggle" type="checkbox" onchange="setHidePurchased(this.checked)"><span class="switch-slider"></span></label></div>\n  <div class="setting-row"><div class="setting-copy"><strong>Affordable wishes first</strong><div class="hint">Move items you can currently afford to the top</div></div><label class="switch"><input id="affordable-first-toggle" type="checkbox" onchange="setAffordableFirst(this.checked)"><span class="switch-slider"></span></label></div>\n  <div class="setting-row"><div class="setting-copy"><strong>Show progress text</strong><div class="hint">Show saved percentage under each wish</div></div><label class="switch"><input id="progress-text-toggle" type="checkbox" onchange="setProgressText(this.checked)"><span class="switch-slider"></span></label></div>\n  <div class="setting-row"><div class="setting-copy"><strong>Show money remaining</strong><div class="hint">Show how much more you need before you can buy it</div></div><label class="switch"><input id="remaining-toggle" type="checkbox" onchange="setShowRemaining(this.checked)"><span class="switch-slider"></span></label></div>\n </div>\n'
-          if 'id="confirm-purchase-toggle"' not in s:
-              if marker not in s:
-                  raise SystemExit('Background settings marker not found')
-              s = s.replace(marker, purchase_ui + marker, 1)
-
-          old_defaults = "function defaults(){return{balance:0,currency:'USD',wishes:[],darkMode:false,textColor:null,accentColor:null,theme:'ledger',depth:7,motion:'normal',compact:false,bgDim:58,glassBlur:2,performanceMode:false,decorativeGlow:true,progressShimmer:true,highContrast:false,bgMotion:true,betterOS:false,background:{type:'none',data:null,mime:null}}}"
-          new_defaults = "function defaults(){return{balance:0,currency:'USD',wishes:[],darkMode:false,textColor:null,accentColor:null,theme:'ledger',depth:7,motion:'normal',compact:false,bgDim:58,glassBlur:2,performanceMode:false,decorativeGlow:true,progressShimmer:true,highContrast:false,bgMotion:true,betterOS:false,confirmPurchases:true,hidePurchased:false,affordableFirst:false,showProgressText:true,showRemaining:true,background:{type:'none',data:null,mime:null}}}"
+          old_defaults = "function defaults(){return{balance:0,currency:'USD',wishes:[],darkMode:false,textColor:null,accentColor:null,theme:'ledger',depth:7,motion:'normal',compact:false,bgDim:58,glassBlur:2,performanceMode:false,decorativeGlow:true,progressShimmer:true,highContrast:false,bgMotion:true,betterOS:false,confirmPurchases:true,hidePurchased:false,affordableFirst:false,showProgressText:true,showRemaining:true,background:{type:'none',data:null,mime:null}}}"
+          new_defaults = "function defaults(){return{balance:0,currency:'USD',wishes:[],darkMode:false,textColor:null,accentColor:null,theme:'ledger',wallpaperPalette:null,depth:7,motion:'normal',compact:false,bgDim:58,glassBlur:2,performanceMode:false,decorativeGlow:true,progressShimmer:true,highContrast:false,bgMotion:true,betterOS:false,confirmPurchases:true,hidePurchased:false,affordableFirst:false,showProgressText:true,showRemaining:true,background:{type:'none',data:null,mime:null}}}"
           if old_defaults in s:
               s = s.replace(old_defaults, new_defaults, 1)
-          elif 'confirmPurchases:true' not in s:
-              raise SystemExit('Defaults function not found')
+          elif 'wallpaperPalette:null' not in s:
+              raise SystemExit('Could not update defaults')
 
-          old_buy = "function removeWish(id){state.wishes=state.wishes.filter(w=>w.id!==id);saveState();renderWishes()}function buyWish(id){const w=state.wishes.find(x=>x.id===id);if(!w||w.purchased||state.balance<w.cost)return;state.balance-=w.cost;w.purchased=true;saveState();renderWishes();renderHome()}function esc(s)"
-          new_buy = "function removeWish(id){state.wishes=state.wishes.filter(w=>w.id!==id);saveState();renderWishes();renderHome()}function buyWish(id){const w=state.wishes.find(x=>x.id===id);if(!w||w.purchased||state.balance<w.cost)return;if(state.confirmPurchases&&!confirm('Buy \\\"'+w.name+'\\\" for '+fmt(w.cost)+'? This will subtract it from your balance.'))return;state.balance=Math.max(0,Math.round((state.balance-w.cost+Number.EPSILON)*100)/100);w.purchased=true;w.purchasedAt=Date.now();saveState();renderWishes();renderHome();renderBalance()}function esc(s)"
-          if old_buy in s:
-              s = s.replace(old_buy, new_buy, 1)
-          elif 'purchasedAt=Date.now()' not in s:
-              raise SystemExit('Buy function not found')
+          old_apply = "function applyAppearance(){const t=THEMES[state.theme]||THEMES.ledger,root=document.documentElement;"
+          new_apply = "function applyAppearance(){const t=(state.theme==='wallpaper'&&state.wallpaperPalette)?state.wallpaperPalette:(THEMES[state.theme]||THEMES.ledger),root=document.documentElement;"
+          if old_apply in s:
+              s = s.replace(old_apply, new_apply, 1)
+          elif "state.theme==='wallpaper'&&state.wallpaperPalette" not in s:
+              raise SystemExit('Could not update applyAppearance theme source')
 
-          if 'Buy • ${fmt(w.cost)}' not in s:
-              new_render = r'''function renderWishes(){const list=document.getElementById('wish-list');list.innerHTML='';let wishes=[...state.wishes];if(state.hidePurchased)wishes=wishes.filter(w=>!w.purchased);if(state.affordableFirst)wishes.sort((a,b)=>{const aa=!a.purchased&&state.balance>=a.cost,bb=!b.purchased&&state.balance>=b.cost;return Number(bb)-Number(aa)});if(!wishes.length){list.innerHTML='<div class="empty-note">'+(state.wishes.length?'All bought wishes are hidden by your settings.':'No wishes yet — add your first goal above ✦')+'</div>';return}wishes.forEach((w,index)=>{const pct=Math.min(100,Math.round(state.balance/w.cost*100)),can=state.balance>=w.cost&&!w.purchased,remaining=Math.max(0,w.cost-state.balance),card=document.createElement('div');card.className='wish-card'+(can?' wish-ready':'');card.style.animationDelay=(index*45)+'ms';const progressText=state.showProgressText&&!w.purchased?`<div class="hint" style="margin-top:6px">${pct}% saved${state.showRemaining&&remaining>0?' • '+fmt(remaining)+' to go':''}</div>`:'';const boughtText=w.purchased?'<span class="seal-stamp">✓ bought</span>':'';const action=w.purchased?'':(can?`<button class="btn btn-primary btn-sm" onclick="buyWish('${w.id}')">Buy • ${fmt(w.cost)}</button>`:`<button class="btn btn-outline btn-sm" disabled style="opacity:.52;cursor:not-allowed">${pct}% saved</button>`);card.innerHTML=`<div class="wish-photo">${w.image?'<img src="'+w.image+'" alt="">':'✦'}</div><div class="wish-info"><div class="wish-name">${esc(w.name)} ${boughtText}</div><div class="wish-cost">${w.purchased?'Bought for '+fmt(w.cost):fmt(w.cost)}</div><div class="progress-track"><div class="progress-fill" data-w="${w.purchased?100:pct}"></div></div>${progressText}<div class="wish-actions">${action}</div></div><button class="wish-remove" onclick="removeWish('${w.id}')">✕</button>`;list.appendChild(card)});requestAnimationFrame(()=>document.querySelectorAll('.progress-fill').forEach(x=>x.style.width=x.dataset.w+'%'))}'''
-              s, n = re.subn(r"function renderWishes\(\)\{.*?\}\nfunction renderSettings\(\)", lambda m: new_render + "\nfunction renderSettings()", s, count=1, flags=re.S)
-              if n != 1:
-                  raise SystemExit('renderWishes replacement failed')
+          old_motion_var = "root.style.setProperty('--motion',state.motion==='extra'?'.65':'1');"
+          new_motion_var = "root.style.setProperty('--motion',state.motion==='extra'?'.65':state.motion==='max'?'.9':'1');"
+          if old_motion_var in s:
+              s = s.replace(old_motion_var, new_motion_var, 1)
 
-          needle = "document.getElementById('better-os-toggle').checked=state.betterOS;"
-          extra = "document.getElementById('better-os-toggle').checked=state.betterOS;document.getElementById('confirm-purchase-toggle').checked=state.confirmPurchases;document.getElementById('hide-purchased-toggle').checked=state.hidePurchased;document.getElementById('affordable-first-toggle').checked=state.affordableFirst;document.getElementById('progress-text-toggle').checked=state.showProgressText;document.getElementById('remaining-toggle').checked=state.showRemaining;"
-          if "confirm-purchase-toggle').checked" not in s:
-              if needle not in s:
-                  raise SystemExit('renderSettings marker not found')
-              s = s.replace(needle, extra, 1)
+          old_class = "document.body.classList.toggle('high-contrast',!!state.highContrast);applyBackgroundPlayback()}"
+          new_class = "document.body.classList.toggle('high-contrast',!!state.highContrast);document.body.classList.toggle('max-animations',state.motion==='max'&&!state.performanceMode);applyBackgroundPlayback()}"
+          if old_class in s:
+              s = s.replace(old_class, new_class, 1)
+          elif "classList.toggle('max-animations'" not in s:
+              raise SystemExit('Could not add max animation body class')
 
-          setter_marker = "function setBetterOS(v){state.betterOS=v;saveState();renderHome();if(v)openBetterOS();else if(currentPage==='os')goTo('home')}"
-          setters = "function setConfirmPurchases(v){state.confirmPurchases=v;saveState()}function setHidePurchased(v){state.hidePurchased=v;saveState();renderWishes()}function setAffordableFirst(v){state.affordableFirst=v;saveState();renderWishes()}function setProgressText(v){state.showProgressText=v;saveState();renderWishes()}function setShowRemaining(v){state.showRemaining=v;saveState();renderWishes()}\n" + setter_marker
-          if 'function setConfirmPurchases' not in s:
-              if setter_marker not in s:
-                  raise SystemExit('Setter marker not found')
-              s = s.replace(setter_marker, setters, 1)
+          old_motion_buttons = "<div class=\"segmented\"><button class=\"seg-btn\" id=\"motion-off\" onclick=\"setMotion('off')\">Off</button><button class=\"seg-btn\" id=\"motion-normal\" onclick=\"setMotion('normal')\">Normal</button><button class=\"seg-btn\" id=\"motion-extra\" onclick=\"setMotion('extra')\">Extra</button></div>"
+          new_motion_buttons = "<div class=\"segmented\"><button class=\"seg-btn\" id=\"motion-off\" onclick=\"setMotion('off')\">Off</button><button class=\"seg-btn\" id=\"motion-normal\" onclick=\"setMotion('normal')\">Normal</button><button class=\"seg-btn\" id=\"motion-extra\" onclick=\"setMotion('extra')\">Extra</button><button class=\"seg-btn\" id=\"motion-max\" onclick=\"setMotion('max')\">Max</button></div>"
+          if old_motion_buttons in s:
+              s = s.replace(old_motion_buttons, new_motion_buttons, 1)
+          elif 'id="motion-max"' not in s:
+              raise SystemExit('Could not add Max animation button')
 
-          css_marker = '.wish-list{display:flex;flex-direction:column;gap:14px;overflow:auto}'
-          css_add = ".wish-ready{border-color:var(--accent)!important;box-shadow:0 6px 0 var(--accentDark),0 14px 24px color-mix(in srgb,var(--accent) 20%,transparent)!important}.wish-ready .wish-cost{color:var(--accent);font-weight:700}"
-          if '.wish-ready{' not in s:
+          old_motion_array = "['off','normal','extra'].forEach(m=>document.getElementById('motion-'+m).classList.toggle('selected',state.motion===m));"
+          new_motion_array = "['off','normal','extra','max'].forEach(m=>document.getElementById('motion-'+m).classList.toggle('selected',state.motion===m));"
+          if old_motion_array in s:
+              s = s.replace(old_motion_array, new_motion_array, 1)
+
+          old_grid = "const tg=document.getElementById('theme-grid');tg.innerHTML='';Object.entries(THEMES).forEach"
+          new_grid = "const tg=document.getElementById('theme-grid');tg.innerHTML='';const wp=document.createElement('button'),wpp=state.wallpaperPalette||{ink:'#151a20',accent:'#6e8798',gold:'#b2a57b'};wp.className='theme-card'+(state.theme==='wallpaper'?' selected':'');wp.innerHTML=`<div class=\"theme-dots\"><i style=\"background:${wpp.ink}\"></i><i style=\"background:${wpp.accent}\"></i><i style=\"background:${wpp.gold}\"></i></div><div class=\"theme-name\">Wallpaper Match</div>`;wp.title='Build theme colors from your selected wallpaper';wp.onclick=()=>setTheme('wallpaper');tg.appendChild(wp);Object.entries(THEMES).forEach"
+          if old_grid in s:
+              s = s.replace(old_grid, new_grid, 1)
+          elif 'Wallpaper Match' not in s:
+              raise SystemExit('Could not add wallpaper theme card')
+
+          old_set_theme = "function setTheme(v){state.theme=v;state.accentColor=null;saveState();applyAppearance();renderSettings()}"
+          palette_helpers = "function clampNum(n,a,b){return Math.max(a,Math.min(b,n))}function rgbToHsl(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let h=0,s=0,l=(mx+mn)/2;if(d){s=d/(1-Math.abs(2*l-1));if(mx===r)h=60*(((g-b)/d)%6);else if(mx===g)h=60*((b-r)/d+2);else h=60*((r-g)/d+4);if(h<0)h+=360}return[h,s,l]}function hslToHex(h,s,l){h=((h%360)+360)%360;s=clampNum(s,0,100)/100;l=clampNum(l,0,100)/100;const c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs((h/60)%2-1)),m=l-c/2;let r=0,g=0,b=0;if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}return'#'+[r,g,b].map(v=>Math.round((v+m)*255).toString(16).padStart(2,'0')).join('')}function hueGap(a,b){const d=Math.abs(a-b);return Math.min(d,360-d)}function paletteFromCanvas(c){const d=c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,c.width,c.height).data;let best=null,second=null,ar=0,ag=0,ab=0,n=0;for(let i=0;i<d.length;i+=16){if(d[i+3]<180)continue;const r=d[i],g=d[i+1],b=d[i+2],[h,sa,l]=rgbToHsl(r,g,b);ar+=r;ag+=g;ab+=b;n++;if(l<.07||l>.94)continue;const score=(.2+sa)*(1.25-Math.abs(l-.52))*255;if(!best||score>best.score){if(best&&hueGap(best.h,h)>32)second=best;best={h,s:sa,l,score}}else if(hueGap(best.h,h)>35&&(!second||score>second.score))second={h,s:sa,l,score}}if(!best){const [h,sa]=rgbToHsl(ar/Math.max(1,n),ag/Math.max(1,n),ab/Math.max(1,n));best={h,s:Math.max(sa,.35),l:.5,score:1}}const h=best.h,sat=clampNum(best.s*100,48,88),h2=second?second.h:(h+42)%360,sat2=second?clampNum(second.s*100,38,82):clampNum(sat*.75,38,72);return{name:'Wallpaper Match',ink:hslToHex(h,clampNum(sat*.52,20,54),13),ink2:hslToHex(h,clampNum(sat*.48,18,50),22),accent:hslToHex(h,sat,48),accent2:hslToHex(h,clampNum(sat+4,52,92),68),gold:hslToHex(h2,sat2,49),gold2:hslToHex(h2,clampNum(sat2+5,42,88),72)}}function extractWallpaperPalette(bg){return new Promise(resolve=>{if(!bg||!bg.data)return resolve(null);let finished=false;const finish=el=>{if(finished)return;finished=true;try{const c=document.createElement('canvas');c.width=48;c.height=48;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(el,0,0,48,48);resolve(paletteFromCanvas(c))}catch{resolve(null)}};const timeout=setTimeout(()=>{if(!finished){finished=true;resolve(null)}},5000);if(bg.mime&&bg.mime.startsWith('video/')){const v=document.createElement('video');v.muted=true;v.playsInline=true;v.preload='metadata';v.onloadeddata=()=>{clearTimeout(timeout);finish(v)};v.onerror=()=>{clearTimeout(timeout);if(!finished){finished=true;resolve(null)}};v.src=bg.data;v.load()}else{const img=new Image();img.onload=()=>{clearTimeout(timeout);finish(img)};img.onerror=()=>{clearTimeout(timeout);if(!finished){finished=true;resolve(null)}};img.src=bg.data}})}async function refreshWallpaperPalette(){if(!state.background||!state.background.data){state.wallpaperPalette=null;saveState();return false}const pal=await extractWallpaperPalette(state.background);if(!pal)return false;state.wallpaperPalette=pal;saveState();if(state.theme==='wallpaper'){applyAppearance();renderSettings()}return true}async function setTheme(v){if(v==='wallpaper'){if(!state.background||!state.background.data){alert('Choose a background picture, GIF, or video first.');return}if(!state.wallpaperPalette){const ok=await refreshWallpaperPalette();if(!ok){alert('I could not read colors from that wallpaper. Try another file.');return}}}state.theme=v;state.accentColor=null;saveState();applyAppearance();renderSettings()}"
+          if old_set_theme in s:
+              s = s.replace(old_set_theme, palette_helpers, 1)
+          elif 'function refreshWallpaperPalette' not in s:
+              raise SystemExit('Could not add wallpaper palette helpers')
+
+          old_read = "function readBg(f,type,msg){const r=new FileReader();r.onload=e=>{const old={...state.background};state.background={type,data:e.target.result,mime:f.type};if(!saveState()){state.background=old;return toast('bg-toast','That file is too large to save.',true)}applyBackground();renderSettings();toast('bg-toast',msg)};r.readAsDataURL(f)}"
+          new_read = "function readBg(f,type,msg){const r=new FileReader();r.onload=async e=>{const old={...state.background};state.background={type,data:e.target.result,mime:f.type};if(!saveState()){state.background=old;return toast('bg-toast','That file is too large to save.',true)}await refreshWallpaperPalette();applyBackground();applyAppearance();renderSettings();toast('bg-toast',msg)};r.readAsDataURL(f)}"
+          if old_read in s:
+              s = s.replace(old_read, new_read, 1)
+          elif 'r.onload=async e=>' not in s:
+              raise SystemExit('Could not update background reader')
+
+          old_remove = "function removeBackground(){state.background={type:'none',data:null,mime:null};saveState();applyBackground();renderSettings();toast('bg-toast','Background removed.')}"
+          new_remove = "function removeBackground(){state.background={type:'none',data:null,mime:null};state.wallpaperPalette=null;if(state.theme==='wallpaper')state.theme='ledger';saveState();applyBackground();applyAppearance();renderSettings();toast('bg-toast','Background removed.')}"
+          if old_remove in s:
+              s = s.replace(old_remove, new_remove, 1)
+
+          css_marker = "body.motion-off *,body.motion-off *::before,body.motion-off *::after{animation:none!important;transition:none!important}"
+          max_css = "@keyframes maxBookGlow{0%,100%{box-shadow:0 calc(var(--depthLg)*2.1) 80px rgba(0,0,0,.38),0 var(--depthLg) 0 rgba(8,19,14,.22),inset 0 2px rgba(255,255,255,.72)}50%{box-shadow:0 calc(var(--depthLg)*2.4) 92px color-mix(in srgb,var(--accent) 18%,rgba(0,0,0,.38)),0 var(--depthLg) 0 rgba(8,19,14,.22),inset 0 2px rgba(255,255,255,.82)}}@keyframes maxIconFloat{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-4px) rotate(3deg)}}@keyframes maxSeal{0%,100%{transform:translateY(0) rotate(-2deg) scale(1)}50%{transform:translateY(-9px) rotate(3deg) scale(1.035)}}@keyframes maxShine{0%{transform:translateX(-170%) skewX(-20deg)}55%,100%{transform:translateX(220%) skewX(-20deg)}}@keyframes maxReadyPulse{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}@keyframes maxSelected{0%,100%{transform:translateY(-2px)}50%{transform:translateY(-5px) scale(1.018)}}@keyframes maxPageIn{0%{opacity:0;transform:translateX(28px) scale(.97);filter:blur(5px)}65%{opacity:1;transform:translateX(-3px) scale(1.008);filter:blur(0)}100%{transform:none}}body.max-animations:not(.performance) .book{animation:maxBookGlow 5.5s ease-in-out infinite}body.max-animations:not(.performance) .page.active{animation:maxPageIn .62s cubic-bezier(.2,.9,.2,1)}body.max-animations:not(.performance) .cover-seal{animation:maxSeal 2.8s ease-in-out infinite}body.max-animations:not(.performance) .tab-icon,body.max-animations:not(.performance) .app-icon{animation:maxIconFloat 2.7s ease-in-out infinite}body.max-animations:not(.performance) .tab-card,body.max-animations:not(.performance) .wish-card,body.max-animations:not(.performance) .theme-card,body.max-animations:not(.performance) .app-card{transition:transform .38s cubic-bezier(.2,.9,.2,1),box-shadow .38s ease,border-color .3s ease}body.max-animations:not(.performance) .tab-card:hover{transform:translateY(-6px) scale(1.018) rotateX(2deg)}body.max-animations:not(.performance) .wish-card:hover,body.max-animations:not(.performance) .app-card:hover{transform:translateY(-5px) scale(1.012)}body.max-animations:not(.performance) .theme-card:hover{transform:translateY(-4px) rotate(.5deg)}body.max-animations:not(.performance) .theme-card.selected{animation:maxSelected 2.4s ease-in-out infinite}body.max-animations:not(.performance) .wish-ready{animation:maxReadyPulse 2.2s ease-in-out infinite}body.max-animations:not(.performance) .btn-primary{position:relative;overflow:hidden}body.max-animations:not(.performance) .btn-primary::after{content:'';position:absolute;inset:-20% auto -20% -35%;width:28%;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(255,255,255,.42),transparent);animation:maxShine 2.8s ease-in-out infinite}body.max-animations:not(.performance) .help-btn{animation:maxIconFloat 2.9s ease-in-out infinite}body.max-animations:not(.performance) .progress-fill{transition:width 1.05s cubic-bezier(.16,1,.3,1)}body.max-animations:not(.performance) .page{scroll-behavior:smooth}"
+          if 'body.max-animations:not(.performance) .book' not in s:
               if css_marker not in s:
-                  raise SystemExit('Wish CSS marker not found')
-              s = s.replace(css_marker, css_marker + css_add, 1)
+                  raise SystemExit('Could not find animation CSS marker')
+              s = s.replace(css_marker, max_css + css_marker, 1)
 
           p.write_text(s, encoding='utf-8')
           PY
-      - name: Commit wish purchase update
+      - name: Commit wallpaper theme and max animations
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           git diff --cached --quiet && exit 0
-          git commit -m "Add real wish purchases and purchase settings"
+          git commit -m "Add wallpaper matching theme and max animations"
           git push
