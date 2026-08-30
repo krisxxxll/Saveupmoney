@@ -1,4 +1,4 @@
-name: Apply themed borders
+name: Apply wish purchase update
 
 on:
   push:
@@ -15,29 +15,77 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Make borders follow the active theme
+      - name: Add real buying and wish settings
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
+
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
 
-          old = "root.style.setProperty('--gold2',t.gold2);const ac=state.accentColor||t.accent;root.style.setProperty('--accent',ac);"
-          new = "root.style.setProperty('--gold2',t.gold2);const ac=state.accentColor||t.accent;const themedLine=state.highContrast?(state.darkMode?'#eeeeee':'#111111'):(state.darkMode?hexMix(ac,-18):hexMix(ac,58));document.body.style.setProperty('--line',themedLine);root.style.setProperty('--accent',ac);"
-          if old not in s:
-              raise SystemExit('Could not find applyAppearance theme section')
-          s = s.replace(old, new, 1)
+          marker = ' <div class="settings-block"><label class="field-label">Background</label>'
+          purchase_ui = ''' <div class="settings-block"><label class="field-label">Wish list & purchases</label>
+  <div class="setting-row"><div class="setting-copy"><strong>Confirm before buying</strong><div class="hint">Ask before money is spent on a wish item</div></div><label class="switch"><input id="confirm-purchase-toggle" type="checkbox" onchange="setConfirmPurchases(this.checked)"><span class="switch-slider"></span></label></div>
+  <div class="setting-row"><div class="setting-copy"><strong>Hide bought items</strong><div class="hint">Automatically hide wishes after you buy them</div></div><label class="switch"><input id="hide-purchased-toggle" type="checkbox" onchange="setHidePurchased(this.checked)"><span class="switch-slider"></span></label></div>
+  <div class="setting-row"><div class="setting-copy"><strong>Affordable wishes first</strong><div class="hint">Move items you can currently afford to the top</div></div><label class="switch"><input id="affordable-first-toggle" type="checkbox" onchange="setAffordableFirst(this.checked)"><span class="switch-slider"></span></label></div>
+  <div class="setting-row"><div class="setting-copy"><strong>Show progress text</strong><div class="hint">Show saved percentage under each wish</div></div><label class="switch"><input id="progress-text-toggle" type="checkbox" onchange="setProgressText(this.checked)"><span class="switch-slider"></span></label></div>
+  <div class="setting-row"><div class="setting-copy"><strong>Show money remaining</strong><div class="hint">Show how much more you need before you can buy it</div></div><label class="switch"><input id="remaining-toggle" type="checkbox" onchange="setShowRemaining(this.checked)"><span class="switch-slider"></span></label></div>
+ </div>
+'''
+          if 'id="confirm-purchase-toggle"' not in s:
+              if marker not in s:
+                  raise SystemExit('Background settings marker not found')
+              s = s.replace(marker, purchase_ui + marker, 1)
 
-          s = s.replace("border:1px solid rgba(255,255,255,.4);border-radius:29px", "border:2px solid color-mix(in srgb,var(--line) 82%,white);border-radius:29px", 1)
-          s = s.replace("border:1px solid rgba(255,255,255,.16);border-radius:19px", "border:1px solid color-mix(in srgb,var(--accent2) 52%,white);border-radius:19px", 1)
+          old_defaults = "function defaults(){return{balance:0,currency:'USD',wishes:[],darkMode:false,textColor:null,accentColor:null,theme:'ledger',depth:7,motion:'normal',compact:false,bgDim:58,glassBlur:2,performanceMode:false,decorativeGlow:true,progressShimmer:true,highContrast:false,bgMotion:true,betterOS:false,background:{type:'none',data:null,mime:null}}}"
+          new_defaults = "function defaults(){return{balance:0,currency:'USD',wishes:[],darkMode:false,textColor:null,accentColor:null,theme:'ledger',depth:7,motion:'normal',compact:false,bgDim:58,glassBlur:2,performanceMode:false,decorativeGlow:true,progressShimmer:true,highContrast:false,bgMotion:true,betterOS:false,confirmPurchases:true,hidePurchased:false,affordableFirst:false,showProgressText:true,showRemaining:true,background:{type:'none',data:null,mime:null}}}"
+          if old_defaults in s:
+              s = s.replace(old_defaults, new_defaults, 1)
+          elif 'confirmPurchases:true' not in s:
+              raise SystemExit('Defaults function not found')
+
+          old_buy = "function removeWish(id){state.wishes=state.wishes.filter(w=>w.id!==id);saveState();renderWishes()}function buyWish(id){const w=state.wishes.find(x=>x.id===id);if(!w||w.purchased||state.balance<w.cost)return;state.balance-=w.cost;w.purchased=true;saveState();renderWishes();renderHome()}function esc(s)"
+          new_buy = "function removeWish(id){state.wishes=state.wishes.filter(w=>w.id!==id);saveState();renderWishes();renderHome()}function buyWish(id){const w=state.wishes.find(x=>x.id===id);if(!w||w.purchased||state.balance<w.cost)return;if(state.confirmPurchases&&!confirm('Buy \\\"'+w.name+'\\\" for '+fmt(w.cost)+'? This will subtract it from your balance.'))return;state.balance=Math.max(0,Math.round((state.balance-w.cost+Number.EPSILON)*100)/100);w.purchased=true;w.purchasedAt=Date.now();saveState();renderWishes();renderHome();renderBalance()}function esc(s)"
+          if old_buy in s:
+              s = s.replace(old_buy, new_buy, 1)
+          elif 'purchasedAt=Date.now()' not in s:
+              raise SystemExit('Buy function not found')
+
+          if 'Buy • ${fmt(w.cost)}' not in s:
+              new_render = r'''function renderWishes(){const list=document.getElementById('wish-list');list.innerHTML='';let wishes=[...state.wishes];if(state.hidePurchased)wishes=wishes.filter(w=>!w.purchased);if(state.affordableFirst)wishes.sort((a,b)=>{const aa=!a.purchased&&state.balance>=a.cost,bb=!b.purchased&&state.balance>=b.cost;return Number(bb)-Number(aa)});if(!wishes.length){list.innerHTML='<div class="empty-note">'+(state.wishes.length?'All bought wishes are hidden by your settings.':'No wishes yet — add your first goal above ✦')+'</div>';return}wishes.forEach((w,index)=>{const pct=Math.min(100,Math.round(state.balance/w.cost*100)),can=state.balance>=w.cost&&!w.purchased,remaining=Math.max(0,w.cost-state.balance),card=document.createElement('div');card.className='wish-card'+(can?' wish-ready':'');card.style.animationDelay=(index*45)+'ms';const progressText=state.showProgressText&&!w.purchased?`<div class="hint" style="margin-top:6px">${pct}% saved${state.showRemaining&&remaining>0?' • '+fmt(remaining)+' to go':''}</div>`:'';const boughtText=w.purchased?'<span class="seal-stamp">✓ bought</span>':'';const action=w.purchased?'':(can?`<button class="btn btn-primary btn-sm" onclick="buyWish('${w.id}')">Buy • ${fmt(w.cost)}</button>`:`<button class="btn btn-outline btn-sm" disabled style="opacity:.52;cursor:not-allowed">${pct}% saved</button>`);card.innerHTML=`<div class="wish-photo">${w.image?'<img src="'+w.image+'" alt="">':'✦'}</div><div class="wish-info"><div class="wish-name">${esc(w.name)} ${boughtText}</div><div class="wish-cost">${w.purchased?'Bought for '+fmt(w.cost):fmt(w.cost)}</div><div class="progress-track"><div class="progress-fill" data-w="${w.purchased?100:pct}"></div></div>${progressText}<div class="wish-actions">${action}</div></div><button class="wish-remove" onclick="removeWish('${w.id}')">✕</button>`;list.appendChild(card)});requestAnimationFrame(()=>document.querySelectorAll('.progress-fill').forEach(x=>x.style.width=x.dataset.w+'%'))}'''
+              s, n = re.subn(r"function renderWishes\(\)\{.*?\}\nfunction renderSettings\(\)", lambda m: new_render + "\nfunction renderSettings()", s, count=1, flags=re.S)
+              if n != 1:
+                  raise SystemExit('renderWishes replacement failed')
+
+          needle = "document.getElementById('better-os-toggle').checked=state.betterOS;"
+          extra = "document.getElementById('better-os-toggle').checked=state.betterOS;document.getElementById('confirm-purchase-toggle').checked=state.confirmPurchases;document.getElementById('hide-purchased-toggle').checked=state.hidePurchased;document.getElementById('affordable-first-toggle').checked=state.affordableFirst;document.getElementById('progress-text-toggle').checked=state.showProgressText;document.getElementById('remaining-toggle').checked=state.showRemaining;"
+          if "confirm-purchase-toggle').checked" not in s:
+              if needle not in s:
+                  raise SystemExit('renderSettings marker not found')
+              s = s.replace(needle, extra, 1)
+
+          setter_marker = "function setBetterOS(v){state.betterOS=v;saveState();renderHome();if(v)openBetterOS();else if(currentPage==='os')goTo('home')}"
+          setters = "function setConfirmPurchases(v){state.confirmPurchases=v;saveState()}function setHidePurchased(v){state.hidePurchased=v;saveState();renderWishes()}function setAffordableFirst(v){state.affordableFirst=v;saveState();renderWishes()}function setProgressText(v){state.showProgressText=v;saveState();renderWishes()}function setShowRemaining(v){state.showRemaining=v;saveState();renderWishes()}\n" + setter_marker
+          if 'function setConfirmPurchases' not in s:
+              if setter_marker not in s:
+                  raise SystemExit('Setter marker not found')
+              s = s.replace(setter_marker, setters, 1)
+
+          css_marker = '.wish-list{display:flex;flex-direction:column;gap:14px;overflow:auto}'
+          css_add = ".wish-ready{border-color:var(--accent)!important;box-shadow:0 6px 0 var(--accentDark),0 14px 24px color-mix(in srgb,var(--accent) 20%,transparent)!important}.wish-ready .wish-cost{color:var(--accent);font-weight:700}"
+          if '.wish-ready{' not in s:
+              if css_marker not in s:
+                  raise SystemExit('Wish CSS marker not found')
+              s = s.replace(css_marker, css_marker + css_add, 1)
 
           p.write_text(s, encoding='utf-8')
           PY
-      - name: Commit themed borders
+      - name: Commit wish purchase update
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           git diff --cached --quiet && exit 0
-          git commit -m "Make theme colors update UI borders"
+          git commit -m "Add real wish purchases and purchase settings"
           git push
