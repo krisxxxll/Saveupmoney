@@ -19,74 +19,44 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-
+          import base64
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-
-          # Retro theme
           desert = " desert:{name:'Desert',ink:'#2c2114',ink2:'#4c3821',accent:'#a4672d',accent2:'#d99a59',gold:'#ba8b3c',gold2:'#ecc888'}"
           retro = " retro:{name:'Retro',ink:'#061009',ink2:'#0d1e11',accent:'#5cff7a',accent2:'#a0ffb2',gold:'#ffb347',gold2:'#ffd38a'},\n" + desert
           if "retro:{name:'Retro'" not in s:
-              if desert not in s:
-                  raise SystemExit('Desert theme marker not found')
+              if desert not in s: raise SystemExit('Desert theme marker not found')
               s = s.replace(desert, retro, 1)
-
-          # New saved settings
           old_defaults = "function defaults(){return{balance:0,currency:'USD',wishes:[],darkMode:false,textColor:null,accentColor:null,theme:'ledger',wallpaperPalette:null,depth:7,motion:'normal',compact:false,bgDim:58,glassBlur:2,performanceMode:false,decorativeGlow:true,progressShimmer:true,highContrast:false,bgMotion:true,betterOS:false,confirmPurchases:true,hidePurchased:false,affordableFirst:false,showProgressText:true,showRemaining:true,background:{type:'none',data:null,mime:null}}}"
           new_defaults = "function defaults(){return{balance:0,currency:'USD',wishes:[],darkMode:false,textColor:null,accentColor:null,theme:'ledger',wallpaperPalette:null,depth:7,motion:'normal',compact:false,bgDim:58,glassBlur:2,performanceMode:false,decorativeGlow:true,progressShimmer:true,highContrast:false,bgMotion:true,betterOS:false,uiScale:100,scanlines:false,crtGlow:false,monochrome:false,sharpCorners:false,clickSounds:false,confirmPurchases:true,hidePurchased:false,affordableFirst:false,showProgressText:true,showRemaining:true,background:{type:'none',data:null,mime:null}}}"
           if old_defaults in s:
               s = s.replace(old_defaults, new_defaults, 1)
-          elif 'uiScale:100' not in s:
-              raise SystemExit('Defaults marker not found')
-
-          # Add settings panel
+          elif 'uiScale:100' not in s: raise SystemExit('Defaults marker not found')
           marker = ' <div class="settings-block"><label class="field-label">Wish list & purchases</label>'
-          extras = ''' <div class="settings-block"><label class="field-label">Visual extras</label>
-  <div class="setting-row"><div class="setting-copy"><strong>UI scale</strong><div class="hint">Make the whole interface smaller or larger</div><input class="range" id="ui-scale-range" type="range" min="85" max="115" step="1" oninput="setUIScale(this.value)"></div><span class="hint" id="ui-scale-value">100%</span></div>
-  <div class="setting-row"><div class="setting-copy"><strong>Scanlines</strong><div class="hint">Adds a subtle old-monitor line effect</div></div><label class="switch"><input id="scanlines-toggle" type="checkbox" onchange="setScanlines(this.checked)"><span class="switch-slider"></span></label></div>
-  <div class="setting-row"><div class="setting-copy"><strong>CRT glow</strong><div class="hint">Adds a soft glowing retro-display look</div></div><label class="switch"><input id="crt-toggle" type="checkbox" onchange="setCRTGlow(this.checked)"><span class="switch-slider"></span></label></div>
-  <div class="setting-row"><div class="setting-copy"><strong>Monochrome mode</strong><div class="hint">Turns the ledger interface grayscale</div></div><label class="switch"><input id="monochrome-toggle" type="checkbox" onchange="setMonochrome(this.checked)"><span class="switch-slider"></span></label></div>
-  <div class="setting-row"><div class="setting-copy"><strong>Sharp corners</strong><div class="hint">Switches the rounded UI to a boxier style</div></div><label class="switch"><input id="sharp-toggle" type="checkbox" onchange="setSharpCorners(this.checked)"><span class="switch-slider"></span></label></div>
-  <div class="setting-row"><div class="setting-copy"><strong>Button sounds</strong><div class="hint">Tiny synthesized click when pressing controls</div></div><label class="switch"><input id="click-sounds-toggle" type="checkbox" onchange="setClickSounds(this.checked)"><span class="switch-slider"></span></label></div>
- </div>
-'''
+          extras = base64.b64decode('IDxkaXYgY2xhc3M9InNldHRpbmdzLWJsb2NrIj48bGFiZWwgY2xhc3M9ImZpZWxkLWxhYmVsIj5WaXN1YWwgZXh0cmFzPC9sYWJlbD4KICA8ZGl2IGNsYXNzPSJzZXR0aW5nLXJvdyI+PGRpdiBjbGFzcz0ic2V0dGluZy1jb3B5Ij48c3Ryb25nPlVJIHNjYWxlPC9zdHJvbmc+PGRpdiBjbGFzcz0iaGludCI+TWFrZSB0aGUgd2hvbGUgaW50ZXJmYWNlIHNtYWxsZXIgb3IgbGFyZ2VyPC9kaXY+PGlucHV0IGNsYXNzPSJyYW5nZSIgaWQ9InVpLXNjYWxlLXJhbmdlIiB0eXBlPSJyYW5nZSIgbWluPSI4NSIgbWF4PSIxMTUiIHN0ZXA9IjEiIG9uaW5wdXQ9InNldFVJU2NhbGUodGhpcy52YWx1ZSkiPjwvZGl2PjxzcGFuIGNsYXNzPSJoaW50IiBpZD0idWktc2NhbGUtdmFsdWUiPjEwMCU8L3NwYW4+PC9kaXY+CiAgPGRpdiBjbGFzcz0ic2V0dGluZy1yb3ciPjxkaXYgY2xhc3M9InNldHRpbmctY29weSI+PHN0cm9uZz5TY2FubGluZXM8L3N0cm9uZz48ZGl2IGNsYXNzPSJoaW50Ij5BZGRzIGEgc3VidGxlIG9sZC1tb25pdG9yIGxpbmUgZWZmZWN0PC9kaXY+PC9kaXY+PGxhYmVsIGNsYXNzPSJzd2l0Y2giPjxpbnB1dCBpZD0ic2NhbmxpbmVzLXRvZ2dsZSIgdHlwZT0iY2hlY2tib3giIG9uY2hhbmdlPSJzZXRTY2FubGluZXModGhpcy5jaGVja2VkKSI+PHNwYW4gY2xhc3M9InN3aXRjaC1zbGlkZXIiPjwvc3Bhbj48L2xhYmVsPjwvZGl2PgogIDxkaXYgY2xhc3M9InNldHRpbmctcm93Ij48ZGl2IGNsYXNzPSJzZXR0aW5nLWNvcHkiPjxzdHJvbmc+Q1JUIGdsb3c8L3N0cm9uZz48ZGl2IGNsYXNzPSJoaW50Ij5BZGRzIGEgc29mdCBnbG93aW5nIHJldHJvLWRpc3BsYXkgbG9vazwvZGl2PjwvZGl2PjxsYWJlbCBjbGFzcz0ic3dpdGNoIj48aW5wdXQgaWQ9ImNydC10b2dnbGUiIHR5cGU9ImNoZWNrYm94IiBvbmNoYW5nZT0ic2V0Q1JUR2xvdyh0aGlzLmNoZWNrZWQpIj48c3BhbiBjbGFzcz0ic3dpdGNoLXNsaWRlciI+PC9zcGFuPjwvbGFiZWw+PC9kaXY+CiAgPGRpdiBjbGFzcz0ic2V0dGluZy1yb3ciPjxkaXYgY2xhc3M9InNldHRpbmctY29weSI+PHN0cm9uZz5Nb25vY2hyb21lIG1vZGU8L3N0cm9uZz48ZGl2IGNsYXNzPSJoaW50Ij5UdXJucyB0aGUgbGVkZ2VyIGludGVyZmFjZSBncmF5c2NhbGU8L2Rpdj48L2Rpdj48bGFiZWwgY2xhc3M9InN3aXRjaCI+PGlucHV0IGlkPSJtb25vY2hyb21lLXRvZ2dsZSIgdHlwZT0iY2hlY2tib3giIG9uY2hhbmdlPSJzZXRNb25vY2hyb21lKHRoaXMuY2hlY2tlZCkiPjxzcGFuIGNsYXNzPSJzd2l0Y2gtc2xpZGVyIj48L3NwYW4+PC9sYWJlbD48L2Rpdj4KICA8ZGl2IGNsYXNzPSJzZXR0aW5nLXJvdyI+PGRpdiBjbGFzcz0ic2V0dGluZy1jb3B5Ij48c3Ryb25nPlNoYXJwIGNvcm5lcnM8L3N0cm9uZz48ZGl2IGNsYXNzPSJoaW50Ij5Td2l0Y2hlcyB0aGUgcm91bmRlZCBVSSB0byBhIGJveGllciBzdHlsZTwvZGl2PjwvZGl2PjxsYWJlbCBjbGFzcz0ic3dpdGNoIj48aW5wdXQgaWQ9InNoYXJwLXRvZ2dsZSIgdHlwZT0iY2hlY2tib3giIG9uY2hhbmdlPSJzZXRTaGFycENvcm5lcnModGhpcy5jaGVja2VkKSI+PHNwYW4gY2xhc3M9InN3aXRjaC1zbGlkZXIiPjwvc3Bhbj48L2xhYmVsPjwvZGl2PgogIDxkaXYgY2xhc3M9InNldHRpbmctcm93Ij48ZGl2IGNsYXNzPSJzZXR0aW5nLWNvcHkiPjxzdHJvbmc+QnV0dG9uIHNvdW5kczwvc3Ryb25nPjxkaXYgY2xhc3M9ImhpbnQiPlRpbnkgc3ludGhlc2l6ZWQgY2xpY2sgd2hlbiBwcmVzc2luZyBjb250cm9sczwvZGl2PjwvZGl2PjxsYWJlbCBjbGFzcz0ic3dpdGNoIj48aW5wdXQgaWQ9ImNsaWNrLXNvdW5kcy10b2dnbGUiIHR5cGU9ImNoZWNrYm94IiBvbmNoYW5nZT0ic2V0Q2xpY2tTb3VuZHModGhpcy5jaGVja2VkKSI+PHNwYW4gY2xhc3M9InN3aXRjaC1zbGlkZXIiPjwvc3Bhbj48L2xhYmVsPjwvZGl2PgogPC9kaXY+Cg==').decode()
           if 'id="ui-scale-range"' not in s:
-              if marker not in s:
-                  raise SystemExit('Purchase settings marker not found')
+              if marker not in s: raise SystemExit('Purchase settings marker not found')
               s = s.replace(marker, extras + marker, 1)
-
-          # Apply settings to the UI
           old_tail = "document.body.classList.toggle('high-contrast',!!state.highContrast);document.body.classList.toggle('max-animations',state.motion==='max'&&!state.performanceMode);applyBackgroundPlayback()}"
           new_tail = "root.style.setProperty('--uiScale',(Number(state.uiScale)||100)/100);document.body.classList.toggle('high-contrast',!!state.highContrast);document.body.classList.toggle('max-animations',state.motion==='max'&&!state.performanceMode);document.body.classList.toggle('scanlines',!!state.scanlines&&!state.performanceMode);document.body.classList.toggle('crt-glow',!!state.crtGlow&&!state.performanceMode);document.body.classList.toggle('monochrome',!!state.monochrome);document.body.classList.toggle('sharp-corners',!!state.sharpCorners);applyBackgroundPlayback()}"
           if old_tail in s:
               s = s.replace(old_tail, new_tail, 1)
-          elif "classList.toggle('scanlines'" not in s:
-              raise SystemExit('applyAppearance marker not found')
-
-          # Sync settings controls
+          elif "classList.toggle('scanlines'" not in s: raise SystemExit('applyAppearance marker not found')
           sync_marker = "document.getElementById('remaining-toggle').checked=state.showRemaining;['off','normal','extra','max'].forEach"
           sync_repl = "document.getElementById('remaining-toggle').checked=state.showRemaining;document.getElementById('ui-scale-range').value=state.uiScale||100;document.getElementById('ui-scale-value').textContent=(state.uiScale||100)+'%';document.getElementById('scanlines-toggle').checked=!!state.scanlines;document.getElementById('crt-toggle').checked=!!state.crtGlow;document.getElementById('monochrome-toggle').checked=!!state.monochrome;document.getElementById('sharp-toggle').checked=!!state.sharpCorners;document.getElementById('click-sounds-toggle').checked=!!state.clickSounds;['off','normal','extra','max'].forEach"
           if sync_marker in s:
               s = s.replace(sync_marker, sync_repl, 1)
-          elif "ui-scale-range').value" not in s:
-              raise SystemExit('renderSettings sync marker not found')
-
-          # Setters + synthesized UI click
+          elif "ui-scale-range').value" not in s: raise SystemExit('renderSettings sync marker not found')
           perf = "function setPerformance(v){state.performanceMode=v;saveState();applyAppearance();renderSettings()}"
           setters = perf + "function setUIScale(v){state.uiScale=Number(v);saveState();applyAppearance();const e=document.getElementById('ui-scale-value');if(e)e.textContent=state.uiScale+'%'}function setScanlines(v){state.scanlines=v;saveState();applyAppearance()}function setCRTGlow(v){state.crtGlow=v;saveState();applyAppearance()}function setMonochrome(v){state.monochrome=v;saveState();applyAppearance()}function setSharpCorners(v){state.sharpCorners=v;saveState();applyAppearance()}function setClickSounds(v){state.clickSounds=v;saveState();if(v)playUIClick()}let uiClickCtx=null;function playUIClick(){if(!state.clickSounds)return;try{if(!uiClickCtx)uiClickCtx=new(window.AudioContext||window.webkitAudioContext)();if(uiClickCtx.state==='suspended')uiClickCtx.resume().catch(()=>{});const c=uiClickCtx,o=c.createOscillator(),g=c.createGain();o.type='square';o.frequency.setValueAtTime(state.theme==='retro'?440:620,c.currentTime);o.frequency.exponentialRampToValueAtTime(state.theme==='retro'?300:470,c.currentTime+.045);g.gain.setValueAtTime(.035,c.currentTime);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+.055);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.06)}catch{}}document.addEventListener('pointerdown',e=>{if(!state.clickSounds)return;const x=e.target.closest('button,.btn,.coin,.seg-btn,.theme-card,.app-card,.back-btn,.help-btn');if(x)playUIClick()},true);"
           if 'function setUIScale' not in s:
-              if perf not in s:
-                  raise SystemExit('Performance setter marker not found')
+              if perf not in s: raise SystemExit('Performance setter marker not found')
               s = s.replace(perf, setters, 1)
-
-          # Visual CSS
           css_marker = "body.motion-off *,body.motion-off *::before,body.motion-off *::after{animation:none!important;transition:none!important}"
-          css = "body .shell{zoom:var(--uiScale,1)}body.scanlines .book::after{background:repeating-linear-gradient(to bottom,rgba(20,35,25,.08) 0 1px,transparent 1px 4px),radial-gradient(circle at 100% 0,rgba(255,255,255,.48),transparent 34%)}body.crt-glow .book{box-shadow:0 calc(var(--depthLg)*2.1) 80px rgba(0,0,0,.38),0 0 34px color-mix(in srgb,var(--accent) 32%,transparent),0 var(--depthLg) 0 rgba(8,19,14,.22),inset 0 0 26px color-mix(in srgb,var(--accent) 9%,transparent)!important}body.crt-glow .title,body.crt-glow .balance-amount,body.crt-glow .tab-name{ text-shadow:0 0 10px color-mix(in srgb,var(--accent) 38%,transparent)}body.monochrome .book{filter:grayscale(1)}body.sharp-corners .book,body.sharp-corners .tab-card,body.sharp-corners .tab-icon,body.sharp-corners .back-btn,body.sharp-corners .btn,body.sharp-corners .ledger-input,body.sharp-corners .wish-form,body.sharp-corners .settings-block,body.sharp-corners .wish-card,body.sharp-corners .picture-preview,body.sharp-corners .settings-preview,body.sharp-corners .coin,body.sharp-corners .seg-btn,body.sharp-corners .theme-card,body.sharp-corners .setting-row,body.sharp-corners .app-card,body.sharp-corners .os-panel-card{border-radius:3px!important}body.performance .shell{zoom:1!important}" + css_marker
+          css = "body .shell{zoom:var(--uiScale,1)}body.scanlines .book::after{background:repeating-linear-gradient(to bottom,rgba(20,35,25,.08) 0 1px,transparent 1px 4px),radial-gradient(circle at 100% 0,rgba(255,255,255,.48),transparent 34%)}body.crt-glow .book{box-shadow:0 calc(var(--depthLg)*2.1) 80px rgba(0,0,0,.38),0 0 34px color-mix(in srgb,var(--accent) 32%,transparent),0 var(--depthLg) 0 rgba(8,19,14,.22),inset 0 0 26px color-mix(in srgb,var(--accent) 9%,transparent)!important}body.crt-glow .title,body.crt-glow .balance-amount,body.crt-glow .tab-name{text-shadow:0 0 10px color-mix(in srgb,var(--accent) 38%,transparent)}body.monochrome .book{filter:grayscale(1)}body.sharp-corners .book,body.sharp-corners .tab-card,body.sharp-corners .tab-icon,body.sharp-corners .back-btn,body.sharp-corners .btn,body.sharp-corners .ledger-input,body.sharp-corners .wish-form,body.sharp-corners .settings-block,body.sharp-corners .wish-card,body.sharp-corners .picture-preview,body.sharp-corners .settings-preview,body.sharp-corners .coin,body.sharp-corners .seg-btn,body.sharp-corners .theme-card,body.sharp-corners .setting-row,body.sharp-corners .app-card,body.sharp-corners .os-panel-card{border-radius:3px!important}body.performance .shell{zoom:1!important}" + css_marker
           if 'body.scanlines .book::after' not in s:
-              if css_marker not in s:
-                  raise SystemExit('CSS marker not found')
+              if css_marker not in s: raise SystemExit('CSS marker not found')
               s = s.replace(css_marker, css, 1)
-
           p.write_text(s, encoding='utf-8')
           PY
       - name: Commit Retro theme and settings
