@@ -1,4 +1,4 @@
-name: Apply Better OS alarm and mirror
+name: Apply Retro theme and visual settings
 
 on:
   push:
@@ -15,99 +15,85 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Add Better OS Alarm and Mirror module
+      - name: Add Retro theme and visual settings
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-          if 'const ALARM_CFG_KEY=' in s:
-              print('Alarm/Mirror module already installed')
-              raise SystemExit(0)
 
-          addon = r'''<script>
-          (()=>{
-          const ALARM_CFG_KEY='wishLedgerAlarmCfg_v1';
-          let alarmCfg={time:'',enabled:false,snoozeUntil:0,lastKey:''};
-          try{alarmCfg={...alarmCfg,...JSON.parse(localStorage.getItem(ALARM_CFG_KEY)||'{}')}}catch{}
-          let alarmTimer=null,alarmRinging=false,alarmAudio=null,alarmAudioUrl=null,alarmToneCtx=null,alarmToneTimer=null;
-          let alarmRecorder=null,alarmRecordStream=null,alarmChunks=[],alarmRecordShouldSave=true,mirrorStream=null;
-          const saveAlarmCfg=()=>{try{localStorage.setItem(ALARM_CFG_KEY,JSON.stringify(alarmCfg))}catch{}};
+          # Retro theme
+          desert = " desert:{name:'Desert',ink:'#2c2114',ink2:'#4c3821',accent:'#a4672d',accent2:'#d99a59',gold:'#ba8b3c',gold2:'#ecc888'}"
+          retro = " retro:{name:'Retro',ink:'#061009',ink2:'#0d1e11',accent:'#5cff7a',accent2:'#a0ffb2',gold:'#ffb347',gold2:'#ffd38a'},\n" + desert
+          if "retro:{name:'Retro'" not in s:
+              if desert not in s:
+                  raise SystemExit('Desert theme marker not found')
+              s = s.replace(desert, retro, 1)
 
-          const style=document.createElement('style');
-          style.textContent=`
-          .alarm-actions,.mirror-actions,.alarm-ring-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}
-          .alarm-sound-name{margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--paper2);font:700 11px var(--mono);color:var(--accent)}
-          #alarm-record-btn.recording{background:linear-gradient(145deg,#e76666,#a92e2e);border-color:#7b2020;box-shadow:0 5px 0 #6d1d1d}
-          .mirror-stage{position:relative;width:100%;aspect-ratio:4/5;max-height:470px;overflow:hidden;border:2px solid var(--line);border-radius:20px;background:#050706;box-shadow:0 7px 0 color-mix(in srgb,var(--line) 60%,#181818),0 16px 28px rgba(0,0,0,.18)}
-          .mirror-stage video{width:100%;height:100%;display:none;object-fit:cover;transform:scaleX(-1)}.mirror-stage.active video{display:block}
-          .mirror-placeholder{position:absolute;inset:0;display:grid;place-content:center;text-align:center;gap:7px;color:#e8eee9;padding:25px;background:radial-gradient(circle at 50% 35%,color-mix(in srgb,var(--accent) 22%,#07100c),#050706 72%)}
-          .mirror-placeholder strong{font:700 24px var(--display)}.mirror-placeholder span{font-size:12px;color:#aab7b0}.mirror-stage.active .mirror-placeholder{display:none}
-          .alarm-overlay{position:fixed;inset:0;z-index:260;display:none;place-items:center;padding:24px;background:rgba(4,10,7,.82);backdrop-filter:blur(12px)}.alarm-overlay.show{display:grid}
-          .alarm-ring-box{width:min(430px,92vw);padding:30px;text-align:center;color:var(--text);border:2px solid color-mix(in srgb,var(--accent) 60%,white);border-radius:28px;background:linear-gradient(145deg,var(--paper2),var(--paper));box-shadow:0 18px 0 var(--accentDark),0 38px 70px rgba(0,0,0,.45),inset 0 2px rgba(255,255,255,.8);animation:alarmPop .42s cubic-bezier(.2,.9,.2,1)}
-          .alarm-bell{font-size:64px;animation:alarmShake .75s ease-in-out infinite}.alarm-ring-box h2{font:700 42px var(--mono);margin:13px 0 6px;color:var(--accent)}.alarm-ring-box p{color:var(--muted);margin:0}.alarm-ring-actions{justify-content:center;margin-top:22px}
-          @keyframes alarmPop{from{opacity:0;transform:scale(.82) translateY(18px)}to{opacity:1;transform:none}}@keyframes alarmShake{0%,100%{transform:rotate(-8deg) scale(1)}50%{transform:rotate(8deg) scale(1.06)}}
-          body.performance .alarm-overlay{backdrop-filter:none!important}body.motion-off .alarm-ring-box,body.motion-off .alarm-bell{animation:none!important}`;
-          document.head.appendChild(style);
+          # New saved settings
+          old_defaults = "function defaults(){return{balance:0,currency:'USD',wishes:[],darkMode:false,textColor:null,accentColor:null,theme:'ledger',wallpaperPalette:null,depth:7,motion:'normal',compact:false,bgDim:58,glassBlur:2,performanceMode:false,decorativeGlow:true,progressShimmer:true,highContrast:false,bgMotion:true,betterOS:false,confirmPurchases:true,hidePurchased:false,affordableFirst:false,showProgressText:true,showRemaining:true,background:{type:'none',data:null,mime:null}}}"
+          new_defaults = "function defaults(){return{balance:0,currency:'USD',wishes:[],darkMode:false,textColor:null,accentColor:null,theme:'ledger',wallpaperPalette:null,depth:7,motion:'normal',compact:false,bgDim:58,glassBlur:2,performanceMode:false,decorativeGlow:true,progressShimmer:true,highContrast:false,bgMotion:true,betterOS:false,uiScale:100,scanlines:false,crtGlow:false,monochrome:false,sharpCorners:false,clickSounds:false,confirmPurchases:true,hidePurchased:false,affordableFirst:false,showProgressText:true,showRemaining:true,background:{type:'none',data:null,mime:null}}}"
+          if old_defaults in s:
+              s = s.replace(old_defaults, new_defaults, 1)
+          elif 'uiScale:100' not in s:
+              raise SystemExit('Defaults marker not found')
 
-          const grid=document.querySelector('#page-os .app-grid');
-          if(grid&&!document.getElementById('os-addon-alarm-card'))grid.insertAdjacentHTML('beforeend',`<button class="app-card" id="os-addon-alarm-card" onclick="openOSApp('alarm')"><div class="app-icon">⏰</div><strong>Alarm</strong><span>Time & custom sound</span></button><button class="app-card" id="os-addon-mirror-card" onclick="openOSApp('mirror')"><div class="app-icon">◉</div><strong>Mirror</strong><span>Use your camera</span></button>`);
+          # Add settings panel
+          marker = ' <div class="settings-block"><label class="field-label">Wish list & purchases</label>'
+          extras = ''' <div class="settings-block"><label class="field-label">Visual extras</label>
+  <div class="setting-row"><div class="setting-copy"><strong>UI scale</strong><div class="hint">Make the whole interface smaller or larger</div><input class="range" id="ui-scale-range" type="range" min="85" max="115" step="1" oninput="setUIScale(this.value)"></div><span class="hint" id="ui-scale-value">100%</span></div>
+  <div class="setting-row"><div class="setting-copy"><strong>Scanlines</strong><div class="hint">Adds a subtle old-monitor line effect</div></div><label class="switch"><input id="scanlines-toggle" type="checkbox" onchange="setScanlines(this.checked)"><span class="switch-slider"></span></label></div>
+  <div class="setting-row"><div class="setting-copy"><strong>CRT glow</strong><div class="hint">Adds a soft glowing retro-display look</div></div><label class="switch"><input id="crt-toggle" type="checkbox" onchange="setCRTGlow(this.checked)"><span class="switch-slider"></span></label></div>
+  <div class="setting-row"><div class="setting-copy"><strong>Monochrome mode</strong><div class="hint">Turns the ledger interface grayscale</div></div><label class="switch"><input id="monochrome-toggle" type="checkbox" onchange="setMonochrome(this.checked)"><span class="switch-slider"></span></label></div>
+  <div class="setting-row"><div class="setting-copy"><strong>Sharp corners</strong><div class="hint">Switches the rounded UI to a boxier style</div></div><label class="switch"><input id="sharp-toggle" type="checkbox" onchange="setSharpCorners(this.checked)"><span class="switch-slider"></span></label></div>
+  <div class="setting-row"><div class="setting-copy"><strong>Button sounds</strong><div class="hint">Tiny synthesized click when pressing controls</div></div><label class="switch"><input id="click-sounds-toggle" type="checkbox" onchange="setClickSounds(this.checked)"><span class="switch-slider"></span></label></div>
+ </div>
+'''
+          if 'id="ui-scale-range"' not in s:
+              if marker not in s:
+                  raise SystemExit('Purchase settings marker not found')
+              s = s.replace(marker, extras + marker, 1)
 
-          const osPage=document.getElementById('page-os');
-          if(osPage&&!document.getElementById('os-app-alarm'))osPage.insertAdjacentHTML('beforeend',`
-          <div class="os-app" id="os-app-alarm"><div class="os-app-header"><button class="os-nav-btn" onclick="closeOSApp()">←</button><h2 class="title">Alarm</h2></div><div class="os-panel-card"><label class="field-label">Alarm time</label><input id="alarm-time" class="ledger-input" type="time" onchange="saveAlarmTime(this.value)"><div class="setting-row" style="margin-top:12px"><div class="setting-copy"><strong>Alarm enabled</strong><div class="hint">Uses this device's local time</div></div><label class="switch"><input id="alarm-toggle" type="checkbox" onchange="setAlarmEnabled(this.checked)"><span class="switch-slider"></span></label></div><div class="hint" id="alarm-status" style="margin-top:9px">No alarm set.</div></div><div class="os-panel-card"><label class="field-label">Alarm sound</label><p class="hint">Use the built-in tone, choose an audio file, or record your own sound with the microphone.</p><div class="alarm-actions"><div class="file-btn-wrap btn btn-outline btn-sm">Choose sound<input id="alarm-file-input" type="file" accept="audio/*" onchange="importAlarmSound(event)"></div><button class="btn btn-primary btn-sm" id="alarm-record-btn" onclick="toggleAlarmRecording()">● Record with mic</button><button class="btn btn-outline btn-sm" onclick="previewAlarmSound()">▶ Test sound</button><button class="btn btn-outline btn-sm" onclick="clearAlarmSound()">Use default</button></div><div class="alarm-sound-name" id="alarm-sound-name">Built-in alarm tone</div><div class="toast" id="alarm-toast"></div><p class="hint" style="margin-top:10px">For a reliable alarm, keep this site open. Browsers can pause or stop pages after a tab is closed or the device sleeps.</p></div></div>
-          <div class="os-app" id="os-app-mirror"><div class="os-app-header"><button class="os-nav-btn" onclick="closeOSApp()">←</button><h2 class="title">Mirror</h2></div><div class="mirror-stage"><video id="mirror-video" autoplay muted playsinline></video><div class="mirror-placeholder"><strong>Camera is off</strong><span>Allow camera access to use Mirror.</span></div></div><div class="mirror-actions"><button class="btn btn-primary" onclick="startMirror()">Start camera</button><button class="btn btn-outline" onclick="stopMirror()">Stop camera</button></div><div class="toast" id="mirror-toast"></div><p class="hint">The camera stream stops automatically when you leave Mirror.</p></div>`);
+          # Apply settings to the UI
+          old_tail = "document.body.classList.toggle('high-contrast',!!state.highContrast);document.body.classList.toggle('max-animations',state.motion==='max'&&!state.performanceMode);applyBackgroundPlayback()}"
+          new_tail = "root.style.setProperty('--uiScale',(Number(state.uiScale)||100)/100);document.body.classList.toggle('high-contrast',!!state.highContrast);document.body.classList.toggle('max-animations',state.motion==='max'&&!state.performanceMode);document.body.classList.toggle('scanlines',!!state.scanlines&&!state.performanceMode);document.body.classList.toggle('crt-glow',!!state.crtGlow&&!state.performanceMode);document.body.classList.toggle('monochrome',!!state.monochrome);document.body.classList.toggle('sharp-corners',!!state.sharpCorners);applyBackgroundPlayback()}"
+          if old_tail in s:
+              s = s.replace(old_tail, new_tail, 1)
+          elif "classList.toggle('scanlines'" not in s:
+              raise SystemExit('applyAppearance marker not found')
 
-          if(!document.getElementById('alarm-overlay'))document.body.insertAdjacentHTML('beforeend',`<div class="alarm-overlay" id="alarm-overlay" aria-hidden="true"><div class="alarm-ring-box"><div class="alarm-bell">⏰</div><span class="eyebrow">Better OS Alarm</span><h2 id="alarm-ring-time">Alarm</h2><p id="alarm-ring-label">Your alarm is ringing.</p><div class="alarm-ring-actions"><button class="btn btn-primary" onclick="dismissAlarm()">Stop alarm</button><button class="btn btn-outline" onclick="snoozeAlarm()">Snooze 5 min</button></div></div></div>`);
+          # Sync settings controls
+          sync_marker = "document.getElementById('remaining-toggle').checked=state.showRemaining;['off','normal','extra','max'].forEach"
+          sync_repl = "document.getElementById('remaining-toggle').checked=state.showRemaining;document.getElementById('ui-scale-range').value=state.uiScale||100;document.getElementById('ui-scale-value').textContent=(state.uiScale||100)+'%';document.getElementById('scanlines-toggle').checked=!!state.scanlines;document.getElementById('crt-toggle').checked=!!state.crtGlow;document.getElementById('monochrome-toggle').checked=!!state.monochrome;document.getElementById('sharp-toggle').checked=!!state.sharpCorners;document.getElementById('click-sounds-toggle').checked=!!state.clickSounds;['off','normal','extra','max'].forEach"
+          if sync_marker in s:
+              s = s.replace(sync_marker, sync_repl, 1)
+          elif "ui-scale-range').value" not in s:
+              raise SystemExit('renderSettings sync marker not found')
 
-          function openAlarmDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open('WishLedgerAlarmDB',1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('sound'))r.result.createObjectStore('sound',{keyPath:'id'})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
-          async function getAlarmBlob(){try{const db=await openAlarmDB();return await new Promise((resolve,reject)=>{const q=db.transaction('sound','readonly').objectStore('sound').get('current');q.onsuccess=()=>resolve(q.result||null);q.onerror=()=>reject(q.error)})}catch{return null}}
-          async function saveAlarmBlob(blob,name){const db=await openAlarmDB();await new Promise((resolve,reject)=>{const tx=db.transaction('sound','readwrite');tx.objectStore('sound').put({id:'current',blob,name:name||'Custom alarm',saved:Date.now()});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});refreshAlarmUI()}
-          async function clearAlarmSound(){try{const db=await openAlarmDB();await new Promise((resolve,reject)=>{const tx=db.transaction('sound','readwrite');tx.objectStore('sound').delete('current');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});toast('alarm-toast','Using the built-in alarm tone.');refreshAlarmUI()}catch{toast('alarm-toast','Could not clear the custom sound.',true)}}
+          # Setters + synthesized UI click
+          perf = "function setPerformance(v){state.performanceMode=v;saveState();applyAppearance();renderSettings()}"
+          setters = perf + "function setUIScale(v){state.uiScale=Number(v);saveState();applyAppearance();const e=document.getElementById('ui-scale-value');if(e)e.textContent=state.uiScale+'%'}function setScanlines(v){state.scanlines=v;saveState();applyAppearance()}function setCRTGlow(v){state.crtGlow=v;saveState();applyAppearance()}function setMonochrome(v){state.monochrome=v;saveState();applyAppearance()}function setSharpCorners(v){state.sharpCorners=v;saveState();applyAppearance()}function setClickSounds(v){state.clickSounds=v;saveState();if(v)playUIClick()}let uiClickCtx=null;function playUIClick(){if(!state.clickSounds)return;try{if(!uiClickCtx)uiClickCtx=new(window.AudioContext||window.webkitAudioContext)();if(uiClickCtx.state==='suspended')uiClickCtx.resume().catch(()=>{});const c=uiClickCtx,o=c.createOscillator(),g=c.createGain();o.type='square';o.frequency.setValueAtTime(state.theme==='retro'?440:620,c.currentTime);o.frequency.exponentialRampToValueAtTime(state.theme==='retro'?300:470,c.currentTime+.045);g.gain.setValueAtTime(.035,c.currentTime);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+.055);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.06)}catch{}}document.addEventListener('pointerdown',e=>{if(!state.clickSounds)return;const x=e.target.closest('button,.btn,.coin,.seg-btn,.theme-card,.app-card,.back-btn,.help-btn');if(x)playUIClick()},true);"
+          if 'function setUIScale' not in s:
+              if perf not in s:
+                  raise SystemExit('Performance setter marker not found')
+              s = s.replace(perf, setters, 1)
 
-          function saveAlarmTime(v){alarmCfg.time=v;alarmCfg.snoozeUntil=0;alarmCfg.lastKey='';saveAlarmCfg();refreshAlarmUI();startAlarmWatcher()}
-          function setAlarmEnabled(v){if(v&&!alarmCfg.time){const t=document.getElementById('alarm-toggle');if(t)t.checked=false;return toast('alarm-toast','Choose an alarm time first.',true)}alarmCfg.enabled=v;alarmCfg.snoozeUntil=0;alarmCfg.lastKey='';saveAlarmCfg();unlockAlarmAudio();refreshAlarmUI();startAlarmWatcher()}
-          async function refreshAlarmUI(){const ti=document.getElementById('alarm-time'),tg=document.getElementById('alarm-toggle'),st=document.getElementById('alarm-status'),sn=document.getElementById('alarm-sound-name');if(ti)ti.value=alarmCfg.time||'';if(tg)tg.checked=!!alarmCfg.enabled;if(st){if(alarmCfg.snoozeUntil>Date.now())st.textContent='Snoozed until '+new Date(alarmCfg.snoozeUntil).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});else if(alarmCfg.enabled&&alarmCfg.time)st.textContent='Alarm set for '+alarmCfg.time+' • keep this site open';else st.textContent=alarmCfg.time?'Alarm is off.':'No alarm set.'}if(sn){const row=await getAlarmBlob();sn.textContent=row?'Custom: '+row.name:'Built-in alarm tone'}}
-          async function importAlarmSound(e){const f=e.target.files&&e.target.files[0];if(!f)return;if(!f.type.startsWith('audio/'))return toast('alarm-toast','Choose an audio file.',true);try{await saveAlarmBlob(f,f.name);toast('alarm-toast','Custom alarm sound saved.')}catch{toast('alarm-toast','Could not save that sound.',true)}e.target.value=''}
+          # Visual CSS
+          css_marker = "body.motion-off *,body.motion-off *::before,body.motion-off *::after{animation:none!important;transition:none!important}"
+          css = "body .shell{zoom:var(--uiScale,1)}body.scanlines .book::after{background:repeating-linear-gradient(to bottom,rgba(20,35,25,.08) 0 1px,transparent 1px 4px),radial-gradient(circle at 100% 0,rgba(255,255,255,.48),transparent 34%)}body.crt-glow .book{box-shadow:0 calc(var(--depthLg)*2.1) 80px rgba(0,0,0,.38),0 0 34px color-mix(in srgb,var(--accent) 32%,transparent),0 var(--depthLg) 0 rgba(8,19,14,.22),inset 0 0 26px color-mix(in srgb,var(--accent) 9%,transparent)!important}body.crt-glow .title,body.crt-glow .balance-amount,body.crt-glow .tab-name{ text-shadow:0 0 10px color-mix(in srgb,var(--accent) 38%,transparent)}body.monochrome .book{filter:grayscale(1)}body.sharp-corners .book,body.sharp-corners .tab-card,body.sharp-corners .tab-icon,body.sharp-corners .back-btn,body.sharp-corners .btn,body.sharp-corners .ledger-input,body.sharp-corners .wish-form,body.sharp-corners .settings-block,body.sharp-corners .wish-card,body.sharp-corners .picture-preview,body.sharp-corners .settings-preview,body.sharp-corners .coin,body.sharp-corners .seg-btn,body.sharp-corners .theme-card,body.sharp-corners .setting-row,body.sharp-corners .app-card,body.sharp-corners .os-panel-card{border-radius:3px!important}body.performance .shell{zoom:1!important}" + css_marker
+          if 'body.scanlines .book::after' not in s:
+              if css_marker not in s:
+                  raise SystemExit('CSS marker not found')
+              s = s.replace(css_marker, css, 1)
 
-          async function toggleAlarmRecording(){if(alarmRecorder&&alarmRecorder.state==='recording'){stopAlarmRecording(true);return}if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder)return toast('alarm-toast','Microphone recording is not supported in this browser.',true);try{alarmRecordStream=await navigator.mediaDevices.getUserMedia({audio:true});alarmChunks=[];alarmRecordShouldSave=true;const rec=new MediaRecorder(alarmRecordStream);alarmRecorder=rec;const btn=document.getElementById('alarm-record-btn');if(btn){btn.classList.add('recording');btn.textContent='■ Stop recording'}rec.ondataavailable=e=>{if(e.data&&e.data.size)alarmChunks.push(e.data)};rec.onstop=async()=>{const blob=new Blob(alarmChunks,{type:rec.mimeType||'audio/webm'});alarmRecordStream?.getTracks().forEach(t=>t.stop());alarmRecordStream=null;const b=document.getElementById('alarm-record-btn');if(b){b.classList.remove('recording');b.textContent='● Record with mic'}if(alarmRecordShouldSave&&blob.size){try{await saveAlarmBlob(blob,'Microphone recording');toast('alarm-toast','Recording saved as your alarm sound.')}catch{toast('alarm-toast','Could not save the recording.',true)}}alarmRecorder=null;alarmChunks=[]};rec.start();toast('alarm-toast','Recording… tap Stop when finished.')}catch{toast('alarm-toast','Microphone permission was not granted.',true);stopAlarmRecording(false)}}
-          function stopAlarmRecording(save=false){alarmRecordShouldSave=save;if(alarmRecorder&&alarmRecorder.state==='recording'){try{alarmRecorder.stop()}catch{}}else{alarmRecordStream?.getTracks().forEach(t=>t.stop());alarmRecordStream=null}}
-
-          function unlockAlarmAudio(){try{if(!alarmToneCtx)alarmToneCtx=new(window.AudioContext||window.webkitAudioContext)();if(alarmToneCtx.state==='suspended')alarmToneCtx.resume().catch(()=>{})}catch{}}
-          function beepOnce(){try{unlockAlarmAudio();const c=alarmToneCtx;if(!c)return;const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=760;g.gain.setValueAtTime(.0001,c.currentTime);g.gain.exponentialRampToValueAtTime(.25,c.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+.32);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.34)}catch{}}
-          function startDefaultAlarmTone(){stopDefaultAlarmTone();beepOnce();alarmToneTimer=setInterval(beepOnce,900)}function stopDefaultAlarmTone(){if(alarmToneTimer){clearInterval(alarmToneTimer);alarmToneTimer=null}}
-          function stopAlarmSound(){if(alarmAudio){try{alarmAudio.pause();alarmAudio.currentTime=0}catch{}alarmAudio=null}if(alarmAudioUrl){URL.revokeObjectURL(alarmAudioUrl);alarmAudioUrl=null}stopDefaultAlarmTone()}
-          async function playAlarmSound(){stopAlarmSound();const row=await getAlarmBlob();if(row&&row.blob){alarmAudioUrl=URL.createObjectURL(row.blob);alarmAudio=new Audio(alarmAudioUrl);alarmAudio.loop=true;alarmAudio.volume=1;try{await alarmAudio.play();return}catch{stopAlarmSound()}}startDefaultAlarmTone()}
-          async function previewAlarmSound(){unlockAlarmAudio();toast('alarm-toast','Playing alarm preview…');await playAlarmSound();setTimeout(()=>{if(!alarmRinging)stopAlarmSound()},3500)}
-
-          function alarmKey(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+'|'+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
-          function startAlarmWatcher(){if(alarmTimer)clearInterval(alarmTimer);alarmTimer=setInterval(checkAlarm,1000);checkAlarm()}
-          function checkAlarm(){if(alarmRinging||!alarmCfg.enabled)return;const now=Date.now();if(alarmCfg.snoozeUntil&&now>=alarmCfg.snoozeUntil){alarmCfg.snoozeUntil=0;saveAlarmCfg();ringAlarm('Snoozed alarm');return}if(!alarmCfg.time)return;const d=new Date(),hm=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),key=alarmKey();if(hm===alarmCfg.time&&alarmCfg.lastKey!==key){alarmCfg.lastKey=key;saveAlarmCfg();ringAlarm('Alarm for '+alarmCfg.time)}}
-          async function ringAlarm(label){alarmRinging=true;const o=document.getElementById('alarm-overlay');o?.classList.add('show');o?.setAttribute('aria-hidden','false');const t=document.getElementById('alarm-ring-time'),l=document.getElementById('alarm-ring-label');if(t)t.textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});if(l)l.textContent=label||'Your alarm is ringing.';await playAlarmSound()}
-          function dismissAlarm(){alarmRinging=false;alarmCfg.snoozeUntil=0;saveAlarmCfg();stopAlarmSound();const o=document.getElementById('alarm-overlay');o?.classList.remove('show');o?.setAttribute('aria-hidden','true');refreshAlarmUI()}
-          function snoozeAlarm(){alarmRinging=false;alarmCfg.snoozeUntil=Date.now()+300000;saveAlarmCfg();stopAlarmSound();const o=document.getElementById('alarm-overlay');o?.classList.remove('show');o?.setAttribute('aria-hidden','true');refreshAlarmUI()}
-
-          async function startMirror(){if(mirrorStream)return;if(!navigator.mediaDevices?.getUserMedia)return toast('mirror-toast','Camera is not supported in this browser.',true);try{mirrorStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});const v=document.getElementById('mirror-video');if(v){v.srcObject=mirrorStream;await v.play().catch(()=>{});v.closest('.mirror-stage')?.classList.add('active')}toast('mirror-toast','Camera on.')}catch{mirrorStream=null;toast('mirror-toast','Camera permission was not granted.',true)}}
-          function stopMirror(){if(mirrorStream){mirrorStream.getTracks().forEach(t=>t.stop());mirrorStream=null}const v=document.getElementById('mirror-video');if(v){v.srcObject=null;v.closest('.mirror-stage')?.classList.remove('active')}}
-
-          const baseOpenOSApp=openOSApp,baseCloseOSApp=closeOSApp;
-          openOSApp=function(name){if(name!=='mirror')stopMirror();if(name!=='alarm')stopAlarmRecording(false);baseOpenOSApp(name);if(name==='alarm')refreshAlarmUI();if(name==='mirror')setTimeout(startMirror,40)};
-          closeOSApp=function(showDash=true){stopMirror();stopAlarmRecording(false);return baseCloseOSApp(showDash)};
-
-          Object.assign(window,{saveAlarmTime,setAlarmEnabled,refreshAlarmUI,importAlarmSound,toggleAlarmRecording,stopAlarmRecording,clearAlarmSound,previewAlarmSound,dismissAlarm,snoozeAlarm,startMirror,stopMirror});
-          refreshAlarmUI();startAlarmWatcher();
-          })();
-          </script>'''
-
-          s = s.replace('</body>', addon + '\n</body>', 1)
           p.write_text(s, encoding='utf-8')
           PY
-      - name: Commit Better OS Alarm and Mirror
+      - name: Commit Retro theme and settings
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           git diff --cached --quiet && exit 0
-          git commit -m "Add Better OS alarm and camera mirror"
+          git commit -m "Add Retro theme and new visual settings"
           git push
